@@ -1,7 +1,3 @@
-/**
- * Representa un curso del sistema de matricula.
- * Modulo: Gestion de Cursos.
- */
 public class Curso {
 
     private String codigo;
@@ -38,9 +34,6 @@ public class Curso {
         this.creditos = creditos;
     }
 
-    /**
-     * Muestra por consola los datos del curso.
-     */
     public void mostrarDatos() {
         System.out.printf("Codigo: %-8s Nombre: %-25s Creditos: %d%n", codigo, nombre, creditos);
     }
