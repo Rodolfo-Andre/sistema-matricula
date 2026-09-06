@@ -36,7 +36,7 @@ public class Estudiante {
 
     @Override
     public String toString() {
-        return String.format("Código: %s | Nombre: %s | Carrera: %s | Ciclo: %d",
+        return String.format("Códigos: %s | Nombres: %s | Carreras: %s | Ciclos: %d",
                 codigo, nombre, carrera, ciclo);
     }
 }
