@@ -1,4 +1,4 @@
-package com.matricula.sistema_matricula;
+package modelo;
 
 /**
  * Representa a un estudiante de la universidad.
