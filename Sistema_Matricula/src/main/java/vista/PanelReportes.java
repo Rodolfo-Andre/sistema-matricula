@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PanelReportes extends JFrame {
+public class PanelReportes extends JPanel {
     
     private JPanel panelPrincipal;
     private JTabbedPane tabbedPane;
@@ -38,11 +38,8 @@ public class PanelReportes extends JFrame {
     private JTextArea txtEstadisticas;
     
     public PanelReportes() {
+        setLayout(new BorderLayout());
         initComponents();
-        setTitle("Panel de Reportes");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(850, 650);
-        setLocationRelativeTo(null);
         cargarDatosIniciales();
     }
     
@@ -65,41 +62,25 @@ public class PanelReportes extends JFrame {
         tabbedPane.addTab("Estadísticas", crearPanelEstadisticas());
         panelPrincipal.add(tabbedPane, BorderLayout.CENTER);
         
-        // Botón cerrar
-        JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelInferior.setBackground(new Color(240, 248, 255));
-        JButton btnCerrar = new JButton("Cerrar");
-        btnCerrar.setFont(new Font("Arial", Font.BOLD, 12));
-        btnCerrar.addActionListener(e -> dispose());
-        panelInferior.add(btnCerrar);
-        panelPrincipal.add(panelInferior, BorderLayout.SOUTH);
-        
-        add(panelPrincipal);
+        add(panelPrincipal, BorderLayout.CENTER);
     }
-    
-    // ============================================================
-    // PANEL DE ESTUDIANTES
-    // ============================================================
     
     private JPanel crearPanelEstudiantes() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // Panel de filtros
         JPanel panelFiltros = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         panelFiltros.setBackground(Color.WHITE);
         panelFiltros.setBorder(BorderFactory.createTitledBorder("Filtros"));
-        
-        // Filtro por carrera
+
         panelFiltros.add(new JLabel("Carrera:"));
         filtroCarrera = new JComboBox<>();
         filtroCarrera.addItem("Todas");
         filtroCarrera.setPreferredSize(new Dimension(150, 25));
         filtroCarrera.addActionListener(e -> filtrarEstudiantes());
         panelFiltros.add(filtroCarrera);
-        
-        // Filtro por ciclo
+
         panelFiltros.add(new JLabel("Ciclo:"));
         filtroCiclo = new JComboBox<>();
         filtroCiclo.addItem(0);
@@ -109,8 +90,7 @@ public class PanelReportes extends JFrame {
         filtroCiclo.setPreferredSize(new Dimension(60, 25));
         filtroCiclo.addActionListener(e -> filtrarEstudiantes());
         panelFiltros.add(filtroCiclo);
-        
-        // Búsqueda
+
         panelFiltros.add(new JLabel("Buscar:"));
         txtBuscar = new JTextField(15);
         txtBuscar.addActionListener(e -> filtrarEstudiantes());
@@ -125,8 +105,7 @@ public class PanelReportes extends JFrame {
         panelFiltros.add(btnLimpiarFiltros);
         
         panel.add(panelFiltros, BorderLayout.NORTH);
-        
-        // Tabla de estudiantes
+
         String[] columnas = {"Código", "Nombre", "Carrera", "Ciclo"};
         modeloTablaEstudiantes = new DefaultTableModel(columnas, 0) {
             @Override
@@ -146,8 +125,7 @@ public class PanelReportes extends JFrame {
         JScrollPane scrollPane = new JScrollPane(tablaEstudiantes);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Lista de Estudiantes"));
         panel.add(scrollPane, BorderLayout.CENTER);
-        
-        // Información de total
+
         JPanel panelInfo = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panelInfo.setBackground(Color.WHITE);
         panelInfo.add(new JLabel("Total de estudiantes mostrados: "));
@@ -159,17 +137,12 @@ public class PanelReportes extends JFrame {
         
         return panel;
     }
-    
-    // ============================================================
-    // PANEL DE CURSOS
-    // ============================================================
-    
+
     private JPanel crearPanelCursos() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Tabla de cursos
+
         String[] columnas = {"Código", "Nombre", "Créditos"};
         modeloTablaCursos = new DefaultTableModel(columnas, 0) {
             @Override
@@ -190,38 +163,29 @@ public class PanelReportes extends JFrame {
         
         return panel;
     }
-    
-    // ============================================================
-    // PANEL DE ESTADÍSTICAS
-    // ============================================================
-    
+
     private JPanel crearPanelEstadisticas() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Panel de tarjetas
+
         JPanel panelTarjetas = new JPanel(new GridLayout(1, 3, 20, 20));
         panelTarjetas.setBackground(Color.WHITE);
-        
-        // Tarjeta 1: Total Estudiantes
+
         JPanel card1 = crearTarjeta("Total Estudiantes", "0", new Color(70, 130, 180));
         panelTarjetas.add(card1);
         lblTotalEstudiantes = (JLabel) ((JPanel) card1.getComponent(1)).getComponent(0);
-        
-        // Tarjeta 2: Total Cursos
+
         JPanel card2 = crearTarjeta("Total Cursos", "0", new Color(60, 179, 113));
         panelTarjetas.add(card2);
         lblTotalCursos = (JLabel) ((JPanel) card2.getComponent(1)).getComponent(0);
-        
-        // Tarjeta 3: Promedio Ciclo
+
         JPanel card3 = crearTarjeta("Promedio Ciclo", "0.0", new Color(255, 140, 0));
         panelTarjetas.add(card3);
         lblPromedioCiclo = (JLabel) ((JPanel) card3.getComponent(1)).getComponent(0);
         
         panel.add(panelTarjetas, BorderLayout.NORTH);
-        
-        // Área de estadísticas detalladas
+
         JPanel panelDetalles = new JPanel(new BorderLayout());
         panelDetalles.setBorder(BorderFactory.createTitledBorder("Estadísticas Detalladas"));
         
@@ -265,12 +229,8 @@ public class PanelReportes extends JFrame {
         
         return card;
     }
-    
-    // ============================================================
-    // MÉTODOS PARA CARGAR DATOS
-    // ============================================================
-    
-    private void cargarDatosIniciales() {
+
+    public void cargarDatosIniciales() {
         cargarEstudiantes();
         cargarCursos();
         cargarFiltrosCarrera();
@@ -316,11 +276,7 @@ public class PanelReportes extends JFrame {
             }
         }
     }
-    
-    // ============================================================
-    // MÉTODOS DE FILTRADO
-    // ============================================================
-    
+
     private void filtrarEstudiantes() {
         List<RowFilter<Object, Object>> filtros = new ArrayList<>();
         
@@ -355,11 +311,7 @@ public class PanelReportes extends JFrame {
         sorterEstudiantes.setRowFilter(null);
         lblTotalMostrados.setText(String.valueOf(tablaEstudiantes.getRowCount()));
     }
-    
-    // ============================================================
-    // MÉTODOS DE ESTADÍSTICAS
-    // ============================================================
-    
+
     private void actualizarEstadisticas() {
         List<Estudiante> estudiantes = GestorDatos.getEstudiantes();
         List<Curso> cursos = GestorDatos.getCursos();
@@ -425,16 +377,5 @@ public class PanelReportes extends JFrame {
         }
         
         txtEstadisticas.setText(sb.toString());
-    }
-    
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            new PanelReportes().setVisible(true);
-        });
     }
 }

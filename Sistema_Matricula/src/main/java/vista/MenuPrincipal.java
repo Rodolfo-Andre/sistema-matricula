@@ -12,6 +12,7 @@ public class MenuPrincipal extends JFrame {
     private JPanel panelContenido;
     private CardLayout cardLayout;
     private JPanel panelMenu;
+    private PanelReportes panelReportesInstance; 
     
     public MenuPrincipal() {
         initComponents();
@@ -25,10 +26,7 @@ public class MenuPrincipal extends JFrame {
     private void initComponents() {
         JPanel panelPrincipal = new JPanel(new BorderLayout());
         panelPrincipal.setBackground(new Color(255, 248, 220));
-        
-        // ============================================================
-        // PANEL SUPERIOR (Header)
-        // ============================================================
+
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(255, 215, 0));
         panelHeader.setPreferredSize(new Dimension(1100, 70));
@@ -41,21 +39,16 @@ public class MenuPrincipal extends JFrame {
         panelHeader.add(lblTituloHeader, BorderLayout.CENTER);
         
         panelPrincipal.add(panelHeader, BorderLayout.NORTH);
-        
-        // ============================================================
-        // PANEL CENTRAL
-        // ============================================================
+
         JPanel panelCentral = new JPanel(new BorderLayout());
         panelCentral.setBackground(new Color(255, 248, 220));
-        
-        // ---- MENU LATERAL ----
+
         panelMenu = new JPanel();
         panelMenu.setLayout(new BoxLayout(panelMenu, BoxLayout.Y_AXIS));
         panelMenu.setBackground(new Color(60, 60, 80));
         panelMenu.setPreferredSize(new Dimension(230, 0));
         panelMenu.setBorder(BorderFactory.createEmptyBorder(15, 10, 20, 10));
-        
-        // Botón Título interactivo (Regresa a la pantalla principal)
+
         JButton btnMenuTitulo = crearBotonMenu("MENU PRINCIPAL");
         btnMenuTitulo.setFont(new Font("Segoe UI", Font.BOLD, 16));
         btnMenuTitulo.setForeground(new Color(255, 215, 0));
@@ -69,8 +62,7 @@ public class MenuPrincipal extends JFrame {
         separador.setMaximumSize(new Dimension(200, 2));
         panelMenu.add(separador);
         panelMenu.add(Box.createRigidArea(new Dimension(0, 15)));
-        
-        // Botones del menú
+
         JButton btnEstudiantes = crearBotonMenu("Gestion de Estudiantes");
         JButton btnCursos = crearBotonMenu("Gestion de Cursos");
         JButton btnMatricula = crearBotonMenu("Gestion de Matricula");
@@ -98,26 +90,25 @@ public class MenuPrincipal extends JFrame {
         panelMenu.add(btnSalir);
         
         panelCentral.add(panelMenu, BorderLayout.WEST);
-        
-        // ---- PANEL DE CONTENIDO ----
+
         cardLayout = new CardLayout();
         panelContenido = new JPanel(cardLayout);
         panelContenido.setBackground(new Color(255, 248, 220));
         panelContenido.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        
+        // Se instancian las vistas correspondientes
+        panelReportesInstance = new PanelReportes();
         
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
         panelContenido.add(crearPanelInfo("Gestion de Estudiantes", "Jayson"), "Estudiantes");
         panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
         panelContenido.add(crearPanelInfo("Gestion de Matricula", "Equipo"), "Matricula");
         panelContenido.add(crearPanelInfo("Convalidacion", "Anthony"), "Convalidacion");
-        panelContenido.add(crearPanelInfo("Reportes", "Sistema"), "Reportes");
+        panelContenido.add(panelReportesInstance, "Reportes"); // Se inserta el JPanel real de reportes
         
         panelCentral.add(panelContenido, BorderLayout.CENTER);
         panelPrincipal.add(panelCentral, BorderLayout.CENTER);
-        
-        // ============================================================
-        // PANEL INFERIOR (Footer)
-        // ============================================================
+
         JPanel panelFooter = new JPanel(new FlowLayout(FlowLayout.CENTER));
         panelFooter.setBackground(new Color(60, 60, 80));
         panelFooter.setPreferredSize(new Dimension(1100, 35));
@@ -128,18 +119,12 @@ public class MenuPrincipal extends JFrame {
         panelFooter.add(lblFooter);
         
         panelPrincipal.add(panelFooter, BorderLayout.SOUTH);
-        
-        // ============================================================
-        // EVENTOS
-        // ============================================================
+
         btnEstudiantes.addActionListener(e -> mostrarPanel("Estudiantes"));
         btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
         btnMatricula.addActionListener(e -> mostrarPanel("Matricula"));
         btnConvalidacion.addActionListener(e -> mostrarPanel("Convalidacion"));
-        btnReportes.addActionListener(e -> {
-            mostrarPanel("Reportes");
-            abrirReportes();
-        });
+        btnReportes.addActionListener(e -> abrirReportes());
         
         btnSalir.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this, 
@@ -154,7 +139,6 @@ public class MenuPrincipal extends JFrame {
         add(panelPrincipal);
     }
     
-    // Botones con renderizado limpio para corregir la transparencia
     private JButton crearBotonMenu(String texto) {
         JButton boton = new JButton(texto) {
             @Override
@@ -162,9 +146,9 @@ public class MenuPrincipal extends JFrame {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 if (getModel().isRollover()) {
-                    g2.setColor(new Color(255, 215, 0)); // Relleno amarillo en hover
+                    g2.setColor(new Color(255, 215, 0));
                 } else {
-                    g2.setColor(new Color(80, 80, 100)); // Relleno base gris
+                    g2.setColor(new Color(80, 80, 100));
                 }
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.dispose();
@@ -302,9 +286,9 @@ public class MenuPrincipal extends JFrame {
                     return;
                 }
             }
-            
-            PanelReportes panelReportes = new PanelReportes();
-            panelReportes.setVisible(true);
+
+            panelReportesInstance.cargarDatosIniciales();
+            mostrarPanel("Reportes");
             
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
@@ -316,6 +300,8 @@ public class MenuPrincipal extends JFrame {
     }
     
     public static void main(String[] args) {
+        gestor.ConexionBD.inicializarBD();
+
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
