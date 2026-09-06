@@ -34,9 +34,12 @@ public class Estudiante {
         return ciclo;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
-    public String toString() {
-        return String.format("Código: %s | Nombre: %s | Carrera: %s | Ciclo: %d",
-                codigo, nombre, carrera, ciclo);
-    }
+    public String toString() {        
+        return String.format("Estudiante: %s (%s) - %s - Ciclo %d",                nombre, codigo, carrera, ciclo);
+    } 
 }
