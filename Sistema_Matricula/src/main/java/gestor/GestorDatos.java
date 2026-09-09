@@ -192,16 +192,24 @@ public class GestorDatos {
 
     public static List<Matricula> getMatriculas() {
         List<Matricula> lista = new ArrayList<>();
-        // MySQL: CONCAT('MAT-', m.id_matricula)
         String sql = "SELECT CONCAT('MAT-', m.id_matricula) AS codigo_matricula, "
                    + "e.codigo AS codigo_estudiante, "
+                   + "CONCAT(e.nombres, ' ', e.apellidos) AS nombre_estudiante, "
                    + "COALESCE(c.codigo, 'SIN_CURSO') AS codigo_curso, "
-                   + "m.fecha_matricula "
+                   + "COALESCE(c.nombre, 'Sin curso asignado') AS nombre_curso, "
+                   + "CONCAT(p.nombres, ' ', p.apellidos) AS nombre_profesor, "
+                   + "CONCAT(h.dia, ' ', SUBSTRING(h.hora_inicio, 1, 5), '-', SUBSTRING(h.hora_fin, 1, 5), ' Aula:', h.aula) AS horario, "
+                   + "car.nombre AS nombre_carrera, "
+                   + "m.fecha_matricula, "
+                   + "m.periodo "
                    + "FROM matriculas m "
                    + "JOIN estudiantes e ON m.id_estudiante = e.id_estudiante "
+                   + "LEFT JOIN carreras car ON e.id_carrera = car.id_carrera "
                    + "LEFT JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula "
                    + "LEFT JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
-                   + "LEFT JOIN cursos c ON cp.id_curso = c.id_curso;";
+                   + "LEFT JOIN cursos c ON cp.id_curso = c.id_curso "
+                   + "LEFT JOIN profesores p ON cp.id_profesor = p.id_profesor "
+                   + "LEFT JOIN horarios h ON cp.id_horario = h.id_horario;";
 
         try (Connection conn = ConexionBD.conectar();
              Statement stmt = conn.createStatement();
@@ -212,7 +220,13 @@ public class GestorDatos {
                     rs.getString("codigo_matricula"),
                     rs.getString("codigo_estudiante"),
                     rs.getString("codigo_curso"),
-                    rs.getString("fecha_matricula")
+                    rs.getString("fecha_matricula"),
+                    rs.getString("nombre_estudiante"),
+                    rs.getString("nombre_curso"),
+                    rs.getString("nombre_profesor"),
+                    rs.getString("horario"),
+                    rs.getString("nombre_carrera"),
+                    rs.getString("periodo")
                 ));
             }
         } catch (SQLException e) {
@@ -278,19 +292,38 @@ public class GestorDatos {
         return reporte.toString();
     }
 
-    public static void agregarMatricula(Matricula matricula) {
-        String sql = "INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) "
-                   + "SELECT e.id_estudiante, ?, '2026-1' "
-                   + "FROM estudiantes e WHERE e.codigo = ?;";
+    public static boolean agregarMatricula(Matricula matricula) {
+        String sqlMatricula = "INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) "
+                            + "SELECT e.id_estudiante, ?, ? "
+                            + "FROM estudiantes e WHERE e.codigo = ?;";
+
+        String sqlDetalle = "INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) "
+                          + "SELECT LAST_INSERT_ID(), cp.id_curso_profesor "
+                          + "FROM curso_profesor cp "
+                          + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                          + "WHERE c.codigo = ? AND cp.periodo = ? LIMIT 1;";
 
         try (Connection conn = ConexionBD.conectar();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstmtMat = conn.prepareStatement(sqlMatricula);
+             PreparedStatement pstmtDet = conn.prepareStatement(sqlDetalle)) {
 
-            pstmt.setString(1, matricula.getFechaMatricula());
-            pstmt.setString(2, matricula.getCodigoEstudiante());
-            pstmt.executeUpdate();
+            conn.setAutoCommit(false);
+
+            pstmtMat.setString(1, matricula.getFechaMatricula());
+            pstmtMat.setString(2, matricula.getPeriodo());
+            pstmtMat.setString(3, matricula.getCodigoEstudiante());
+            pstmtMat.executeUpdate();
+
+            pstmtDet.setString(1, matricula.getCodigoCurso());
+            pstmtDet.setString(2, matricula.getPeriodo());
+            pstmtDet.executeUpdate();
+
+            conn.commit();
+            return true;
+
         } catch (SQLException e) {
             System.out.println("Error al agregar matricula: " + e.getMessage());
+            return false;
         }
     }
 

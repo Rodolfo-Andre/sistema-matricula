@@ -2,7 +2,6 @@ package vista;
 
 import gestor.GestorDatos;
 import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 
 public class MenuPrincipal extends JFrame {
