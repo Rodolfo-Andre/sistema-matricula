@@ -372,25 +372,60 @@ public final class PanelMatricula extends JPanel {
             String seleccionCurso = (String) comboCursos.getSelectedItem();
             String periodo = txtPeriodo.getText().trim();
 
-            if (seleccionEstudiante != null && seleccionCurso != null && !periodo.isEmpty()) {
-                String codigoEstudiante = seleccionEstudiante.split(" - ")[0];
-                String codigoCurso = seleccionCurso.split(" - ")[0];
+            if (seleccionEstudiante == null || seleccionCurso == null || periodo.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                    "Todos los campos son obligatorios.",
+                    "Error de validacion",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-                Matricula nueva = new Matricula(
-                    "MAT-" + (System.currentTimeMillis() % 10000),
-                    codigoEstudiante,
-                    codigoCurso,
-                    java.time.LocalDate.now().toString()
-                );
-                nueva.setPeriodo(periodo);
+            String codigoEstudiante = seleccionEstudiante.split(" - ")[0];
+            String codigoCurso = seleccionCurso.split(" - ")[0];
 
-                GestorDatos.agregarMatricula(nueva);
+            if (!periodo.matches("\\d{4}-[1-2]")) {
+                JOptionPane.showMessageDialog(this,
+                    "El formato del periodo debe ser AAAA-N (ej: 2026-1).",
+                    "Error de validacion",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (GestorDatos.existeMatricula(codigoEstudiante, codigoCurso, periodo)) {
+                JOptionPane.showMessageDialog(this,
+                    "Ya existe una matricula para este estudiante en este curso y periodo.",
+                    "Matricula duplicada",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            if (!GestorDatos.existeCursoProfesor(codigoCurso, periodo)) {
+                JOptionPane.showMessageDialog(this,
+                    "No hay asignacion curso-profesor disponible para este curso en el periodo.",
+                    "Curso no disponible",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Matricula nueva = new Matricula(
+                "MAT-" + (System.currentTimeMillis() % 10000),
+                codigoEstudiante,
+                codigoCurso,
+                java.time.LocalDate.now().toString()
+            );
+            nueva.setPeriodo(periodo);
+
+            if (GestorDatos.agregarMatricula(nueva)) {
                 cargarDatos();
-
                 JOptionPane.showMessageDialog(this,
                     "Matricula creada exitosamente!",
                     "Exito",
                     JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Error al crear la matricula. Intente nuevamente.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
             }
         }
     }

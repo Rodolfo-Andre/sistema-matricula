@@ -101,16 +101,16 @@ public class MenuPrincipal extends JFrame {
         btnEstudiantes.addActionListener(e -> mostrarPanel("Estudiantes"));
         btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
         btnMatricula.addActionListener(e -> abrirPanelConDatos(
-            panelMatriculaInstance::cargarDatos, "Matricula", "matriculas"));
+                panelMatriculaInstance::cargarDatos, "Matricula", "matriculas"));
         btnConvalidacion.addActionListener(e -> mostrarPanel("Convalidacion"));
         btnReportes.addActionListener(e -> abrirPanelConDatos(
-            panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
+                panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
 
         btnSalir.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
-                "Esta seguro que desea salir del sistema?",
-                "Confirmar salida",
-                JOptionPane.YES_NO_OPTION);
+                    "Esta seguro que desea salir del sistema?",
+                    "Confirmar salida",
+                    JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 System.exit(0);
             }
@@ -173,8 +173,8 @@ public class MenuPrincipal extends JFrame {
         boton.setContentAreaFilled(false);
         boton.setOpaque(false);
         boton.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(COLOR_GRIS, 1),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                BorderFactory.createLineBorder(COLOR_GRIS, 1),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         boton.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -188,6 +188,7 @@ public class MenuPrincipal extends JFrame {
                     boton.setForeground(COLOR_TEXTO);
                 }
             }
+
             @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 if (!texto.equals("MENU PRINCIPAL")) {
@@ -226,7 +227,7 @@ public class MenuPrincipal extends JFrame {
 
         JLabel lblDescripcion = new JLabel();
         lblDescripcion.setText("<html><center>Bienvenido al Sistema de Gestion de Matricula<br>"
-            + "Seleccione una opcion del menu lateral para comenzar</center></html>");
+                + "Seleccione una opcion del menu lateral para comenzar</center></html>");
         lblDescripcion.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         lblDescripcion.setForeground(COLOR_SUBTEXTO);
         gbc.gridy = 3;
@@ -283,16 +284,16 @@ public class MenuPrincipal extends JFrame {
         try {
             if (!GestorDatos.tieneDatos()) {
                 int respuesta = JOptionPane.showConfirmDialog(this,
-                    "No hay datos cargados en el sistema.\nDesea cargar datos de ejemplo?",
-                    "Datos vacios",
-                    JOptionPane.YES_NO_OPTION);
+                        "No hay datos cargados en el sistema.\nDesea cargar datos de ejemplo?",
+                        "Datos vacios",
+                        JOptionPane.YES_NO_OPTION);
 
                 if (respuesta == JOptionPane.YES_OPTION) {
                     GestorDatos.cargarDatosEjemplo();
                     JOptionPane.showMessageDialog(this,
-                        "Datos de ejemplo cargados exitosamente",
-                        "Exito",
-                        JOptionPane.INFORMATION_MESSAGE);
+                            "Datos de ejemplo cargados exitosamente",
+                            "Exito",
+                            JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     return;
                 }
@@ -303,9 +304,9 @@ public class MenuPrincipal extends JFrame {
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
-                "Error al abrir " + nombreError + ": " + ex.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+                    "Error al abrir " + nombreError + ": " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
         }
     }
