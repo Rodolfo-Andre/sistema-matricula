@@ -278,6 +278,44 @@ public class GestorDatos {
         return reporte.toString();
     }
 
+    public static void agregarMatricula(Matricula matricula) {
+        String sql = "INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) "
+                   + "SELECT e.id_estudiante, ?, '2026-1' "
+                   + "FROM estudiantes e WHERE e.codigo = ?;";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, matricula.getFechaMatricula());
+            pstmt.setString(2, matricula.getCodigoEstudiante());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error al agregar matricula: " + e.getMessage());
+        }
+    }
+
+    public static boolean eliminarMatricula(String codigoMatricula) {
+        String sql = "DELETE FROM detalle_matricula WHERE id_matricula IN "
+                   + "(SELECT id_matricula FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ?);";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, codigoMatricula);
+            pstmt.executeUpdate();
+
+            String sql2 = "DELETE FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ?;";
+            try (PreparedStatement pstmt2 = conn.prepareStatement(sql2)) {
+                pstmt2.setString(1, codigoMatricula);
+                int filasAfectadas = pstmt2.executeUpdate();
+                return filasAfectadas > 0;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar matricula: " + e.getMessage());
+            return false;
+        }
+    }
+
     public static boolean tieneDatos() {
         return getTotalEstudiantes() > 0 || getTotalCursos() > 0;
     }
