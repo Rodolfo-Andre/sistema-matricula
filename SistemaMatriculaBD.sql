@@ -1,6 +1,4 @@
--- =========================================================
--- 1. CREACIÓN Y USO DE LA BASE DE DATOS
--- =========================================================
+
 CREATE DATABASE sistema_matricula;
 GO
 
@@ -8,7 +6,7 @@ USE sistema_matricula;
 GO
 
 -- =========================================================
--- 2. CREACIÓN DE TABLAS
+-- TABLAS
 -- =========================================================
 
 CREATE TABLE roles (
@@ -119,7 +117,7 @@ CREATE TABLE detalle_matricula (
 GO
 
 -- =========================================================
--- 3. DATOS INICIALES (PRUEBA)
+--  DATOS INICIALES (PRUEBA)
 -- =========================================================
 
 INSERT INTO roles (nombre) VALUES ('ADMINISTRADOR'), ('DOCENTE'), ('ESTUDIANTE');
@@ -224,7 +222,7 @@ SELECT * FROM estudiantes;
 GO
 
 -- =========================================================
--- 4. PROCEDIMIENTOS ALMACENADOS COMPLETOS
+-- PROCEDIMIENTOS ALMACENADOS 
 -- =========================================================
 
 -- LOGIN
@@ -331,7 +329,7 @@ BEGIN
 END;
 GO
 
--- MAESTROS (CARRERAS Y CURSOS)
+-- CARRERAS Y CURSOS
 CREATE PROCEDURE sp_ListarCarreras
 AS
 BEGIN
