@@ -192,16 +192,24 @@ public class GestorDatos {
 
     public static List<Matricula> getMatriculas() {
         List<Matricula> lista = new ArrayList<>();
-        // MySQL: CONCAT('MAT-', m.id_matricula)
         String sql = "SELECT CONCAT('MAT-', m.id_matricula) AS codigo_matricula, "
                    + "e.codigo AS codigo_estudiante, "
+                   + "CONCAT(e.nombres, ' ', e.apellidos) AS nombre_estudiante, "
                    + "COALESCE(c.codigo, 'SIN_CURSO') AS codigo_curso, "
-                   + "m.fecha_matricula "
+                   + "COALESCE(c.nombre, 'Sin curso asignado') AS nombre_curso, "
+                   + "CONCAT(p.nombres, ' ', p.apellidos) AS nombre_profesor, "
+                   + "CONCAT(h.dia, ' ', SUBSTRING(h.hora_inicio, 1, 5), '-', SUBSTRING(h.hora_fin, 1, 5), ' Aula:', h.aula) AS horario, "
+                   + "car.nombre AS nombre_carrera, "
+                   + "m.fecha_matricula, "
+                   + "m.periodo "
                    + "FROM matriculas m "
                    + "JOIN estudiantes e ON m.id_estudiante = e.id_estudiante "
+                   + "LEFT JOIN carreras car ON e.id_carrera = car.id_carrera "
                    + "LEFT JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula "
                    + "LEFT JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
-                   + "LEFT JOIN cursos c ON cp.id_curso = c.id_curso;";
+                   + "LEFT JOIN cursos c ON cp.id_curso = c.id_curso "
+                   + "LEFT JOIN profesores p ON cp.id_profesor = p.id_profesor "
+                   + "LEFT JOIN horarios h ON cp.id_horario = h.id_horario;";
 
         try (Connection conn = ConexionBD.conectar();
              Statement stmt = conn.createStatement();
@@ -212,7 +220,13 @@ public class GestorDatos {
                     rs.getString("codigo_matricula"),
                     rs.getString("codigo_estudiante"),
                     rs.getString("codigo_curso"),
-                    rs.getString("fecha_matricula")
+                    rs.getString("fecha_matricula"),
+                    rs.getString("nombre_estudiante"),
+                    rs.getString("nombre_curso"),
+                    rs.getString("nombre_profesor"),
+                    rs.getString("horario"),
+                    rs.getString("nombre_carrera"),
+                    rs.getString("periodo")
                 ));
             }
         } catch (SQLException e) {
@@ -276,6 +290,121 @@ public class GestorDatos {
         reporte.append("CURSOS:\n  Total: ").append(getTotalCursos()).append("\n\n");
         reporte.append("MATRÍCULAS:\n  Total: ").append(getTotalMatriculas());
         return reporte.toString();
+    }
+
+    public static boolean existeMatricula(String codigoEstudiante, String codigoCurso, String periodo) {
+        String sql = "SELECT COUNT(*) FROM matriculas m "
+                   + "JOIN estudiantes e ON m.id_estudiante = e.id_estudiante "
+                   + "JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula "
+                   + "JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
+                   + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                   + "WHERE e.codigo = ? AND c.codigo = ? AND m.periodo = ?;";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, codigoEstudiante);
+            pstmt.setString(2, codigoCurso);
+            pstmt.setString(3, periodo);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al verificar matricula: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public static boolean existeCursoProfesor(String codigoCurso, String periodo) {
+        String sql = "SELECT COUNT(*) FROM curso_profesor cp "
+                   + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                   + "WHERE c.codigo = ? AND cp.periodo = ?;";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, codigoCurso);
+            pstmt.setString(2, periodo);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al verificar curso_profesor: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public static boolean agregarMatricula(Matricula matricula) {
+        if (existeMatricula(matricula.getCodigoEstudiante(), matricula.getCodigoCurso(), matricula.getPeriodo())) {
+            System.out.println("Error: Ya existe una matricula para este estudiante en este curso y periodo.");
+            return false;
+        }
+
+        if (!existeCursoProfesor(matricula.getCodigoCurso(), matricula.getPeriodo())) {
+            System.out.println("Error: No hay asignacion curso-profesor disponible para este curso en el periodo.");
+            return false;
+        }
+
+        String sqlMatricula = "INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) "
+                            + "SELECT e.id_estudiante, ?, ? "
+                            + "FROM estudiantes e WHERE e.codigo = ?;";
+
+        String sqlDetalle = "INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) "
+                          + "SELECT LAST_INSERT_ID(), cp.id_curso_profesor "
+                          + "FROM curso_profesor cp "
+                          + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                          + "WHERE c.codigo = ? AND cp.periodo = ? LIMIT 1;";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmtMat = conn.prepareStatement(sqlMatricula);
+             PreparedStatement pstmtDet = conn.prepareStatement(sqlDetalle)) {
+
+            conn.setAutoCommit(false);
+
+            pstmtMat.setString(1, matricula.getFechaMatricula());
+            pstmtMat.setString(2, matricula.getPeriodo());
+            pstmtMat.setString(3, matricula.getCodigoEstudiante());
+            pstmtMat.executeUpdate();
+
+            pstmtDet.setString(1, matricula.getCodigoCurso());
+            pstmtDet.setString(2, matricula.getPeriodo());
+            pstmtDet.executeUpdate();
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            System.out.println("Error al agregar matricula: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean eliminarMatricula(String codigoMatricula) {
+        String sql = "DELETE FROM detalle_matricula WHERE id_matricula IN "
+                   + "(SELECT id_matricula FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ?);";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, codigoMatricula);
+            pstmt.executeUpdate();
+
+            String sql2 = "DELETE FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ?;";
+            try (PreparedStatement pstmt2 = conn.prepareStatement(sql2)) {
+                pstmt2.setString(1, codigoMatricula);
+                int filasAfectadas = pstmt2.executeUpdate();
+                return filasAfectadas > 0;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar matricula: " + e.getMessage());
+            return false;
+        }
     }
 
     public static boolean tieneDatos() {
