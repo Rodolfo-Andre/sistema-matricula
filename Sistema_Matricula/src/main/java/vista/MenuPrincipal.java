@@ -13,6 +13,7 @@ public class MenuPrincipal extends JFrame {
     private CardLayout cardLayout;
     private JPanel panelMenu;
     private PanelReportes panelReportesInstance; 
+    private PanelEstudiantes panelEstudiantesInstance;
     
     public MenuPrincipal() {
         initComponents();
@@ -95,16 +96,16 @@ public class MenuPrincipal extends JFrame {
         panelContenido = new JPanel(cardLayout);
         panelContenido.setBackground(new Color(255, 248, 220));
         panelContenido.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
-        
-        // Se instancian las vistas correspondientes
+     
         panelReportesInstance = new PanelReportes();
+        panelEstudiantesInstance = new PanelEstudiantes();
         
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
-        panelContenido.add(crearPanelInfo("Gestion de Estudiantes", "Jayson"), "Estudiantes");
+        panelContenido.add(panelEstudiantesInstance, "Estudiantes");
         panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
         panelContenido.add(crearPanelInfo("Gestion de Matricula", "Equipo"), "Matricula");
         panelContenido.add(crearPanelInfo("Convalidacion", "Anthony"), "Convalidacion");
-        panelContenido.add(panelReportesInstance, "Reportes"); // Se inserta el JPanel real de reportes
+        panelContenido.add(panelReportesInstance, "Reportes"); 
         
         panelCentral.add(panelContenido, BorderLayout.CENTER);
         panelPrincipal.add(panelCentral, BorderLayout.CENTER);
@@ -120,7 +121,10 @@ public class MenuPrincipal extends JFrame {
         
         panelPrincipal.add(panelFooter, BorderLayout.SOUTH);
 
-        btnEstudiantes.addActionListener(e -> mostrarPanel("Estudiantes"));
+        btnEstudiantes.addActionListener(e -> {
+            panelEstudiantesInstance.cargarDatosTabla(); 
+            mostrarPanel("Estudiantes");
+        });
         btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
         btnMatricula.addActionListener(e -> mostrarPanel("Matricula"));
         btnConvalidacion.addActionListener(e -> mostrarPanel("Convalidacion"));

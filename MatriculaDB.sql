@@ -1,9 +1,15 @@
+DROP DATABASE IF EXISTS sistema_matricula;
 
-CREATE DATABASE IF NOT EXISTS sistema_matricula
+CREATE DATABASE sistema_matricula
     CHARACTER SET utf8mb4 
     COLLATE utf8mb4_spanish_ci;
 
 USE sistema_matricula;
+
+CREATE TABLE roles (
+    id_rol INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;
 
 CREATE TABLE carreras (
     id_carrera INT AUTO_INCREMENT PRIMARY KEY,
@@ -25,9 +31,29 @@ CREATE TABLE estudiantes (
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
     id_carrera INT NOT NULL,
+    ciclo INT NOT NULL DEFAULT 1,
     CONSTRAINT fk_estudiante_carrera 
         FOREIGN KEY (id_carrera) REFERENCES carreras(id_carrera) 
         ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE usuarios (
+    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    id_rol INT NOT NULL,
+    id_estudiante INT NULL,
+    id_profesor INT NULL,
+    estado TINYINT(1) DEFAULT 1,
+    CONSTRAINT fk_usuario_rol 
+        FOREIGN KEY (id_rol) REFERENCES roles(id_rol) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_usuario_estudiante 
+        FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) 
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_usuario_profesor 
+        FOREIGN KEY (id_profesor) REFERENCES profesores(id_profesor) 
+        ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE cursos (
@@ -72,7 +98,6 @@ CREATE TABLE matriculas (
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-
 CREATE TABLE detalle_matricula (
     id_detalle INT AUTO_INCREMENT PRIMARY KEY,
     id_matricula INT NOT NULL,
@@ -85,11 +110,13 @@ CREATE TABLE detalle_matricula (
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+-- Roles para autenticación
+INSERT INTO roles (nombre) VALUES 
+('ADMINISTRADOR'),
+('DOCENTE'),
+('ESTUDIANTE');
 
--- ================================
--- DATOS DE PRUEBA 
--- ================================
-
+-- Carreras
 INSERT INTO carreras (nombre) VALUES 
 ('Ingeniería de Sistemas'),
 ('Ingeniería de Software'),
@@ -102,6 +129,7 @@ INSERT INTO carreras (nombre) VALUES
 ('Inteligencia de Negocios'),
 ('Gestión Logística');
 
+-- Profesores
 INSERT INTO profesores (dni, nombres, apellidos, especialidad) VALUES 
 ('10111213', 'Carlos', 'Mendoza', 'Base de Datos'),
 ('14151617', 'Ana', 'Torres', 'Programación Java'),
@@ -114,18 +142,27 @@ INSERT INTO profesores (dni, nombres, apellidos, especialidad) VALUES
 ('42434445', 'Roberto', 'Gómez', 'Diseño Web'),
 ('46474849', 'Lucía', 'Herrera', 'Ciberseguridad');
 
-INSERT INTO estudiantes (codigo, dni, nombres, apellidos, id_carrera) VALUES 
-('E001', '71234567', 'Juan', 'Pérez', 1),
-('E002', '72345678', 'María', 'Gómez', 2),
-('E003', '73456789', 'Pedro', 'Rojas', 1),
-('E004', '74567890', 'Laura', 'Sánchez', 3),
-('E005', '75678901', 'Diego', 'Díaz', 4),
-('E006', '76789012', 'Carmen', 'Fernández', 5),
-('E007', '77890123', 'Gabriel', 'Álvarez', 6),
-('E008', '78901234', 'Valeria', 'Espinoza', 7),
-('E009', '79012345', 'Mateo', 'Romero', 8),
-('E010', '70123456', 'Camila', 'Navarro', 2);
+-- Estudiantes 
+INSERT INTO estudiantes (codigo, dni, nombres, apellidos, id_carrera, ciclo) VALUES 
+('E001', '71234567', 'Juan', 'Pérez', 1, 1),
+('E002', '72345678', 'María', 'Gómez', 2, 1),
+('E003', '73456789', 'Pedro', 'Rojas', 1, 2),
+('E004', '74567890', 'Laura', 'Sánchez', 3, 2),
+('E005', '75678901', 'Diego', 'Díaz', 4, 3),
+('E006', '76789012', 'Carmen', 'Fernández', 5, 3),
+('E007', '77890123', 'Gabriel', 'Álvarez', 6, 4),
+('E008', '78901234', 'Valeria', 'Espinoza', 7, 4),
+('E009', '79012345', 'Mateo', 'Romero', 8, 5),
+('E010', '70123456', 'Camila', 'Navarro', 2, 5);
 
+-- Cuentas de Usuario para Login
+INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor) VALUES 
+('admin', 'admin123', 1, NULL, NULL),
+('E001', 'estudiante123', 3, 1, NULL),
+('E002', 'estudiante123', 3, 2, NULL),
+('prof_carlos', 'docente123', 2, NULL, 1);
+
+-- Cursos
 INSERT INTO cursos (codigo, nombre, creditos) VALUES 
 ('CUR101', 'Programación Orientada a Objetos', 4),
 ('CUR102', 'Bases de Datos', 3),
@@ -138,6 +175,7 @@ INSERT INTO cursos (codigo, nombre, creditos) VALUES
 ('CUR109', 'Fundamentos de Ciberseguridad', 3),
 ('CUR110', 'Arquitectura de Software', 4);
 
+-- Horarios
 INSERT INTO horarios (dia, hora_inicio, hora_fin, aula) VALUES 
 ('Lunes', '08:00:00', '10:00:00', 'Lab-101'),
 ('Lunes', '10:00:00', '12:00:00', 'Lab-102'),
@@ -150,6 +188,7 @@ INSERT INTO horarios (dia, hora_inicio, hora_fin, aula) VALUES
 ('Viernes', '08:00:00', '10:00:00', 'Lab-105'),
 ('Viernes', '10:00:00', '12:00:00', 'Aula-205');
 
+-- Asignación Curso - Profesor
 INSERT INTO curso_profesor (id_curso, id_profesor, id_horario, periodo) VALUES 
 (1, 2, 1, '2026-1'),
 (2, 1, 2, '2026-1'),
@@ -162,6 +201,7 @@ INSERT INTO curso_profesor (id_curso, id_profesor, id_horario, periodo) VALUES
 (9, 10, 9, '2026-1'),
 (10, 2, 10, '2026-1');
 
+-- Matrículas
 INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) VALUES 
 (1, '2026-03-01', '2026-1'),
 (2, '2026-03-01', '2026-1'),
@@ -174,6 +214,7 @@ INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) VALUES
 (9, '2026-03-05', '2026-1'),
 (10, '2026-03-05', '2026-1');
 
+-- Detalle de Matrícula
 INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES 
 (1, 1),
 (1, 2),
