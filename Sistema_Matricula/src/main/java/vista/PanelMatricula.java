@@ -32,6 +32,9 @@ public final class PanelMatricula extends JPanel {
     private JButton btnNuevaMatricula;
     private JButton btnVerDetalle;
     private JButton btnEliminar;
+    private JButton btnReactivar;
+    private JButton btnQuitarCurso;
+    private JCheckBox chkVerAnuladas;
     private JTable tablaMatriculas;
     private JLabel lblTotalMostrados;
     private JLabel lblTotalMatriculas;
@@ -152,7 +155,7 @@ public final class PanelMatricula extends JPanel {
 
         panelCentral.add(panelFiltros, BorderLayout.NORTH);
 
-        String[] columnas = {"Matricula", "Estudiante", "Curso", "Periodo"};
+        String[] columnas = {"Matricula", "Estudiante", "Curso", "Periodo", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -174,6 +177,8 @@ public final class PanelMatricula extends JPanel {
                 boolean seleccion = tablaMatriculas.getSelectedRow() != -1;
                 btnVerDetalle.setEnabled(seleccion);
                 btnEliminar.setEnabled(seleccion);
+                if (btnQuitarCurso != null) btnQuitarCurso.setEnabled(seleccion);
+                if (btnReactivar != null) btnReactivar.setEnabled(seleccion);
             }
         });
 
@@ -193,10 +198,24 @@ public final class PanelMatricula extends JPanel {
         btnVerDetalle.addActionListener(e -> verDetalle());
         panelAcciones.add(btnVerDetalle);
 
-        btnEliminar = new JButton("Eliminar");
+        btnEliminar = new JButton("Anular Periodo");
         btnEliminar.setEnabled(false);
         btnEliminar.addActionListener(e -> eliminarMatricula());
         panelAcciones.add(btnEliminar);
+
+        btnQuitarCurso = new JButton("Inactivar Curso");
+        btnQuitarCurso.setEnabled(false);
+        btnQuitarCurso.addActionListener(e -> quitarCurso());
+        panelAcciones.add(btnQuitarCurso);
+
+        btnReactivar = new JButton("Reactivar Curso");
+        btnReactivar.setEnabled(false);
+        btnReactivar.addActionListener(e -> reactivarMatricula());
+        panelAcciones.add(btnReactivar);
+
+        chkVerAnuladas = new JCheckBox("Ver Inactivos");
+        chkVerAnuladas.addActionListener(e -> cargarDatos());
+        panelAcciones.add(chkVerAnuladas);
 
         panelCentral.add(panelAcciones, BorderLayout.SOUTH);
 
@@ -215,11 +234,13 @@ public final class PanelMatricula extends JPanel {
     }
 
     public void cargarDatos() {
+        boolean verAnuladas = chkVerAnuladas != null && chkVerAnuladas.isSelected();
         modeloTabla.setRowCount(0);
-        List<Matricula> matriculas = GestorDatos.getMatriculas();
+        List<Matricula> matriculas = GestorDatos.getMatriculas(!verAnuladas);
         cargarFiltros();
 
         Set<String> estudiantesMatriculados = new LinkedHashSet<>();
+        Set<String> cabeceras = new LinkedHashSet<>();
 
         if (matriculas != null) {
             for (Matricula m : matriculas) {
@@ -227,13 +248,15 @@ public final class PanelMatricula extends JPanel {
                     m.getCodigoMatricula(),
                     m.getNombreEstudianteDisplay(),
                     m.getNombreCursoDisplay(),
-                    m.getPeriodo()
+                    m.getPeriodo(),
+                    m.getEstadoDetalle()
                 });
                 estudiantesMatriculados.add(m.getCodigoEstudiante());
+                cabeceras.add(m.getCodigoMatricula());
             }
         }
 
-        lblTotalMatriculas.setText(String.valueOf(tablaMatriculas.getRowCount()));
+        lblTotalMatriculas.setText(String.valueOf(GestorDatos.getTotalCabecerasActivas()));
         lblTotalEstudiantes.setText(String.valueOf(estudiantesMatriculados.size()));
         lblPeriodoActual.setText(obtenerPeriodoMasReciente(matriculas));
         lblTotalMostrados.setText(String.valueOf(tablaMatriculas.getRowCount()));
@@ -407,6 +430,15 @@ public final class PanelMatricula extends JPanel {
                 return;
             }
 
+            int idCp = GestorDatos.getIdCursoProfesor(codigoCurso, periodo);
+            if (idCp != -1 && GestorDatos.existeTraslapeHorario(codigoEstudiante, periodo, idCp)) {
+                JOptionPane.showMessageDialog(this,
+                    "Traslape de horario con otro curso del estudiante en el periodo.",
+                    "Traslape de horario",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             Matricula nueva = new Matricula(
                 "MAT-" + (System.currentTimeMillis() % 10000),
                 codigoEstudiante,
@@ -418,12 +450,12 @@ public final class PanelMatricula extends JPanel {
             if (GestorDatos.agregarMatricula(nueva)) {
                 cargarDatos();
                 JOptionPane.showMessageDialog(this,
-                    "Matricula creada exitosamente!",
+                    "Matricula guardada (si el curso existia inactivo, se reactivo).",
                     "Exito",
                     JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Error al crear la matricula. Intente nuevamente.",
+                    "No se pudo guardar: duplicada, traslape o error de BD.",
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
@@ -435,12 +467,14 @@ public final class PanelMatricula extends JPanel {
         if (fila == -1) return;
 
         String codigoMatricula = (String) modeloTabla.getValueAt(fila, 0);
+        String curso = (String) modeloTabla.getValueAt(fila, 2);
 
-        List<Matricula> matriculas = GestorDatos.getMatriculas();
+        List<Matricula> matriculas = GestorDatos.getMatriculas(false);
         Matricula mat = null;
         if (matriculas != null) {
             for (Matricula m : matriculas) {
-                if (m.getCodigoMatricula().equals(codigoMatricula)) {
+                if (m.getCodigoMatricula().equals(codigoMatricula)
+                    && m.getNombreCursoDisplay().equals(curso)) {
                     mat = m;
                     break;
                 }
@@ -457,7 +491,9 @@ public final class PanelMatricula extends JPanel {
             "<b>Profesor:</b> %s<br>" +
             "<b>Horario:</b> %s<br>" +
             "<b>Periodo:</b> %s<br>" +
-            "<b>Fecha:</b> %s</html>",
+            "<b>Fecha:</b> %s<br>" +
+            "<b>Estado periodo:</b> %s<br>" +
+            "<b>Estado curso:</b> %s</html>",
             mat.getCodigoMatricula(),
             mat.getNombreEstudianteDisplay(),
             mat.getCarreraDisplay(),
@@ -465,7 +501,9 @@ public final class PanelMatricula extends JPanel {
             mat.getNombreProfesorDisplay(),
             mat.getHorarioDisplay(),
             mat.getPeriodo(),
-            mat.getFechaMatricula()
+            mat.getFechaMatricula(),
+            mat.getEstado(),
+            mat.getEstadoDetalle()
         );
 
         JOptionPane.showMessageDialog(this, detalle,
@@ -480,17 +518,94 @@ public final class PanelMatricula extends JPanel {
         String nombreEstudiante = (String) modeloTabla.getValueAt(fila, 1);
 
         int confirmacion = JOptionPane.showConfirmDialog(this,
-            "Desea eliminar la matricula " + codigoMatricula + "\nEstudiante: " + nombreEstudiante + "?",
-            "Confirmar eliminacion",
+            "Desea ANULAR el periodo completo " + codigoMatricula + "\nEstudiante: " + nombreEstudiante + "?\n(Se inactivan la cabecera y todos sus cursos)",
+            "Confirmar anulacion de periodo",
             JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
-            GestorDatos.eliminarMatricula(codigoMatricula);
+            if (GestorDatos.anularMatricula(codigoMatricula)) {
+                cargarDatos();
+                JOptionPane.showMessageDialog(this,
+                    "Periodo anulado (cabecera + cursos inactivos).",
+                    "Exito",
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "No se pudo anular el periodo.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void reactivarMatricula() {
+        int fila = tablaMatriculas.getSelectedRow();
+        if (fila == -1) return;
+
+        String codigoMatricula = (String) modeloTabla.getValueAt(fila, 0);
+        String nombreCurso = String.valueOf(modeloTabla.getValueAt(fila, 2));
+
+        List<Matricula> lista = GestorDatos.getMatriculas(false);
+        String codigoCurso = null;
+        for (Matricula m : lista) {
+            if (m.getCodigoMatricula().equals(codigoMatricula)
+                && m.getNombreCursoDisplay().equals(nombreCurso)) {
+                codigoCurso = m.getCodigoCurso();
+                break;
+            }
+        }
+
+        if (codigoCurso == null) {
+            JOptionPane.showMessageDialog(this, "No se encontro el curso.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (GestorDatos.reactivarCursoDeMatricula(codigoMatricula, codigoCurso)) {
             cargarDatos();
             JOptionPane.showMessageDialog(this,
-                "Matricula eliminada exitosamente!",
-                "Exito",
-                JOptionPane.INFORMATION_MESSAGE);
+                "Curso reactivado (cabecera activada si estaba anulada).",
+                "Exito", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "No se pudo reactivar el curso (traslape o ya estaba activo).",
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void quitarCurso() {
+        int fila = tablaMatriculas.getSelectedRow();
+        if (fila == -1) return;
+
+        String codigoMatricula = (String) modeloTabla.getValueAt(fila, 0);
+        String curso = (String) modeloTabla.getValueAt(fila, 2);
+
+        int confirmacion = JOptionPane.showConfirmDialog(this,
+            "Inactivar el curso '" + curso + "' de " + codigoMatricula + "?\n(La cabecera del periodo se mantiene)",
+            "Confirmar",
+            JOptionPane.YES_NO_OPTION);
+
+        if (confirmacion != JOptionPane.YES_OPTION) return;
+
+        List<Matricula> lista = GestorDatos.getMatriculas(false);
+        String codigoCurso = null;
+        for (Matricula m : lista) {
+            if (m.getCodigoMatricula().equals(codigoMatricula)
+                && m.getNombreCursoDisplay().equals(curso)) {
+                codigoCurso = m.getCodigoCurso();
+                break;
+            }
+        }
+
+        if (codigoCurso == null) {
+            JOptionPane.showMessageDialog(this, "No se encontro el curso.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (GestorDatos.quitarCursoDeMatricula(codigoMatricula, codigoCurso)) {
+            cargarDatos();
+            JOptionPane.showMessageDialog(this, "Curso inactivado (se puede reactivar).", "Exito", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "No se pudo inactivar el curso.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

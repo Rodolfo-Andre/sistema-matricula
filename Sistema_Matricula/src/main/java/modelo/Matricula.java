@@ -4,11 +4,13 @@ package modelo;
  * Representa una matrícula de un estudiante en un curso.
  */
 public class Matricula {
+    private int idMatricula;
     private String codigoMatricula;
     private String codigoEstudiante;
     private String codigoCurso;
     private String fechaMatricula;
     private String estado;
+    private String estadoDetalle;
     private String nombreEstudiante;
     private String nombreCurso;
     private String nombreProfesor;
@@ -41,6 +43,26 @@ public class Matricula {
         this.periodo = periodo;
     }
 
+    public Matricula(int idMatricula, String codigoMatricula, String codigoEstudiante, String codigoCurso,
+                     String fechaMatricula, String nombreEstudiante, String nombreCurso,
+                     String nombreProfesor, String horario, String carrera, String periodo, String estado) {
+        this.idMatricula = idMatricula;
+        this.codigoMatricula = codigoMatricula;
+        this.codigoEstudiante = codigoEstudiante;
+        this.codigoCurso = codigoCurso;
+        this.fechaMatricula = fechaMatricula;
+        this.estado = estado != null ? estado : "ACTIVA";
+        this.nombreEstudiante = nombreEstudiante;
+        this.nombreCurso = nombreCurso;
+        this.nombreProfesor = nombreProfesor;
+        this.horario = horario;
+        this.carrera = carrera;
+        this.periodo = periodo;
+    }
+
+    public int getIdMatricula() { return idMatricula; }
+    public String getEstadoDetalle() { return estadoDetalle != null ? estadoDetalle : "ACTIVO"; }
+    public void setEstadoDetalle(String estadoDetalle) { this.estadoDetalle = estadoDetalle; }
     public String getCodigoMatricula() { return codigoMatricula; }
     public String getCodigoEstudiante() { return codigoEstudiante; }
     public String getCodigoCurso() { return codigoCurso; }

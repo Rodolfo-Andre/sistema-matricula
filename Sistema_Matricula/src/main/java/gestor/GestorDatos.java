@@ -191,8 +191,12 @@ public class GestorDatos {
     }
 
     public static List<Matricula> getMatriculas() {
+        return getMatriculas(true);
+    }
+
+    public static List<Matricula> getMatriculas(boolean soloActivas) {
         List<Matricula> lista = new ArrayList<>();
-        String sql = "SELECT CONCAT('MAT-', m.id_matricula) AS codigo_matricula, "
+        String sql = "SELECT m.id_matricula, CONCAT('MAT-', m.id_matricula) AS codigo_matricula, "
                    + "e.codigo AS codigo_estudiante, "
                    + "CONCAT(e.nombres, ' ', e.apellidos) AS nombre_estudiante, "
                    + "COALESCE(c.codigo, 'SIN_CURSO') AS codigo_curso, "
@@ -201,7 +205,9 @@ public class GestorDatos {
                    + "CONCAT(h.dia, ' ', SUBSTRING(h.hora_inicio, 1, 5), '-', SUBSTRING(h.hora_fin, 1, 5), ' Aula:', h.aula) AS horario, "
                    + "car.nombre AS nombre_carrera, "
                    + "m.fecha_matricula, "
-                   + "m.periodo "
+                   + "m.periodo, "
+                   + "m.estado, "
+                   + "COALESCE(dm.estado, 'ACTIVO') AS estado_detalle "
                    + "FROM matriculas m "
                    + "JOIN estudiantes e ON m.id_estudiante = e.id_estudiante "
                    + "LEFT JOIN carreras car ON e.id_carrera = car.id_carrera "
@@ -209,14 +215,17 @@ public class GestorDatos {
                    + "LEFT JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
                    + "LEFT JOIN cursos c ON cp.id_curso = c.id_curso "
                    + "LEFT JOIN profesores p ON cp.id_profesor = p.id_profesor "
-                   + "LEFT JOIN horarios h ON cp.id_horario = h.id_horario;";
+                   + "LEFT JOIN horarios h ON cp.id_horario = h.id_horario "
+                   + (soloActivas ? "WHERE m.estado = 'ACTIVA' AND COALESCE(dm.estado, 'ACTIVO') = 'ACTIVO' " : "")
+                   + "ORDER BY m.id_matricula;";
 
         try (Connection conn = ConexionBD.conectar();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                lista.add(new Matricula(
+                Matricula mat = new Matricula(
+                    rs.getInt("id_matricula"),
                     rs.getString("codigo_matricula"),
                     rs.getString("codigo_estudiante"),
                     rs.getString("codigo_curso"),
@@ -226,13 +235,31 @@ public class GestorDatos {
                     rs.getString("nombre_profesor"),
                     rs.getString("horario"),
                     rs.getString("nombre_carrera"),
-                    rs.getString("periodo")
-                ));
+                    rs.getString("periodo"),
+                    rs.getString("estado")
+                );
+                mat.setEstadoDetalle(rs.getString("estado_detalle"));
+                lista.add(mat);
             }
         } catch (SQLException e) {
             System.out.println("Error al obtener matrículas: " + e.getMessage());
         }
         return lista;
+    }
+
+    public static List<Matricula> getMatriculasAnuladas() {
+        List<Matricula> todas = getMatriculas(false);
+        List<Matricula> anuladas = new ArrayList<>();
+        for (Matricula m : todas) {
+            if ("ANULADA".equals(m.getEstado()) || "INACTIVO".equals(m.getEstadoDetalle())) {
+                anuladas.add(m);
+            }
+        }
+        return anuladas;
+    }
+
+    public static int getTotalCabecerasActivas() {
+        return obtenerConteoSQL("SELECT COUNT(*) FROM matriculas WHERE estado = 'ACTIVA';");
     }
 
     public static int getTotalEstudiantes() {
@@ -244,7 +271,7 @@ public class GestorDatos {
     }
 
     public static int getTotalMatriculas() {
-        return obtenerConteoSQL("SELECT COUNT(*) FROM matriculas;");
+        return obtenerConteoSQL("SELECT COUNT(*) FROM matriculas WHERE estado = 'ACTIVA';");
     }
 
     private static int obtenerConteoSQL(String sql) {
@@ -298,7 +325,7 @@ public class GestorDatos {
                    + "JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula "
                    + "JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
                    + "JOIN cursos c ON cp.id_curso = c.id_curso "
-                   + "WHERE e.codigo = ? AND c.codigo = ? AND m.periodo = ?;";
+                   + "WHERE e.codigo = ? AND c.codigo = ? AND m.periodo = ? AND m.estado = 'ACTIVA' AND dm.estado = 'ACTIVO';";
 
         try (Connection conn = ConexionBD.conectar();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -340,71 +367,359 @@ public class GestorDatos {
         return false;
     }
 
+    public static int getIdCursoProfesor(String codigoCurso, String periodo) {
+        String sql = "SELECT cp.id_curso_profesor FROM curso_profesor cp "
+                   + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                   + "WHERE c.codigo = ? AND cp.periodo = ? LIMIT 1;";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, codigoCurso);
+            pstmt.setString(2, periodo);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al obtener curso_profesor: " + e.getMessage());
+        }
+        return -1;
+    }
+
+    public static boolean existeTraslapeHorario(String codigoEstudiante, String periodo, int idCursoProfesorNuevo) {
+        String sql = "SELECT COUNT(*) FROM matriculas m "
+                   + "JOIN estudiantes e ON m.id_estudiante = e.id_estudiante "
+                   + "JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula "
+                   + "JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
+                   + "JOIN horarios h ON cp.id_horario = h.id_horario "
+                   + "JOIN curso_profesor cpN ON cpN.id_curso_profesor = ? "
+                   + "JOIN horarios hN ON cpN.id_horario = hN.id_horario "
+                   + "WHERE e.codigo = ? AND m.periodo = ? AND m.estado = 'ACTIVA' AND dm.estado = 'ACTIVO' "
+                   + "AND h.dia = hN.dia "
+                   + "AND h.hora_inicio < hN.hora_fin AND h.hora_fin > hN.hora_inicio;";
+
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, idCursoProfesorNuevo);
+            pstmt.setString(2, codigoEstudiante);
+            pstmt.setString(3, periodo);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al verificar traslape: " + e.getMessage());
+        }
+        return false;
+    }
+
     public static boolean agregarMatricula(Matricula matricula) {
         if (existeMatricula(matricula.getCodigoEstudiante(), matricula.getCodigoCurso(), matricula.getPeriodo())) {
             System.out.println("Error: Ya existe una matricula para este estudiante en este curso y periodo.");
             return false;
         }
 
-        if (!existeCursoProfesor(matricula.getCodigoCurso(), matricula.getPeriodo())) {
+        int idCursoProfesor = getIdCursoProfesor(matricula.getCodigoCurso(), matricula.getPeriodo());
+        if (idCursoProfesor == -1) {
             System.out.println("Error: No hay asignacion curso-profesor disponible para este curso en el periodo.");
             return false;
         }
 
-        String sqlMatricula = "INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo) "
-                            + "SELECT e.id_estudiante, ?, ? "
-                            + "FROM estudiantes e WHERE e.codigo = ?;";
+        if (existeTraslapeHorario(matricula.getCodigoEstudiante(), matricula.getPeriodo(), idCursoProfesor)) {
+            System.out.println("Error: Traslape de horario con otro curso del estudiante en el periodo.");
+            return false;
+        }
 
-        String sqlDetalle = "INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) "
-                          + "SELECT LAST_INSERT_ID(), cp.id_curso_profesor "
-                          + "FROM curso_profesor cp "
-                          + "JOIN cursos c ON cp.id_curso = c.id_curso "
-                          + "WHERE c.codigo = ? AND cp.periodo = ? LIMIT 1;";
-
-        try (Connection conn = ConexionBD.conectar();
-             PreparedStatement pstmtMat = conn.prepareStatement(sqlMatricula);
-             PreparedStatement pstmtDet = conn.prepareStatement(sqlDetalle)) {
-
+        Connection conn = null;
+        try {
+            conn = ConexionBD.conectar();
+            if (conn == null) return false;
             conn.setAutoCommit(false);
 
-            pstmtMat.setString(1, matricula.getFechaMatricula());
-            pstmtMat.setString(2, matricula.getPeriodo());
-            pstmtMat.setString(3, matricula.getCodigoEstudiante());
-            pstmtMat.executeUpdate();
+            int idMatricula = -1;
+            String sqlBuscar = "SELECT m.id_matricula, m.estado FROM matriculas m "
+                             + "JOIN estudiantes e ON m.id_estudiante = e.id_estudiante "
+                             + "WHERE e.codigo = ? AND m.periodo = ? LIMIT 1;";
+            try (PreparedStatement ps = conn.prepareStatement(sqlBuscar)) {
+                ps.setString(1, matricula.getCodigoEstudiante());
+                ps.setString(2, matricula.getPeriodo());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idMatricula = rs.getInt(1);
+                        String est = rs.getString(2);
+                        if ("ANULADA".equals(est)) {
+                            try (PreparedStatement up = conn.prepareStatement(
+                                    "UPDATE matriculas SET estado = 'ACTIVA', fecha_matricula = ? WHERE id_matricula = ?;")) {
+                                up.setString(1, matricula.getFechaMatricula());
+                                up.setInt(2, idMatricula);
+                                up.executeUpdate();
+                            }
+                        }
+                    }
+                }
+            }
 
-            pstmtDet.setString(1, matricula.getCodigoCurso());
-            pstmtDet.setString(2, matricula.getPeriodo());
-            pstmtDet.executeUpdate();
+            if (idMatricula == -1) {
+                String sqlCab = "INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo, estado) "
+                              + "SELECT e.id_estudiante, ?, ?, 'ACTIVA' FROM estudiantes e WHERE e.codigo = ?;";
+                try (PreparedStatement ps = conn.prepareStatement(sqlCab, Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setString(1, matricula.getFechaMatricula());
+                    ps.setString(2, matricula.getPeriodo());
+                    ps.setString(3, matricula.getCodigoEstudiante());
+                    int filas = ps.executeUpdate();
+                    if (filas == 0) {
+                        conn.rollback();
+                        return false;
+                    }
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (keys.next()) idMatricula = keys.getInt(1);
+                    }
+                } catch (SQLException ex) {
+                    if (ex.getErrorCode() == 1062) {
+                        conn.rollback();
+                        return agregarMatricula(matricula);
+                    }
+                    throw ex;
+                }
+            }
+
+            if (idMatricula == -1) {
+                conn.rollback();
+                return false;
+            }
+
+            String sqlVerDet = "SELECT estado FROM detalle_matricula WHERE id_matricula = ? AND id_curso_profesor = ? LIMIT 1;";
+            try (PreparedStatement ps = conn.prepareStatement(sqlVerDet)) {
+                ps.setInt(1, idMatricula);
+                ps.setInt(2, idCursoProfesor);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        if ("ACTIVO".equals(rs.getString(1))) {
+                            conn.rollback();
+                            return false;
+                        }
+                        try (PreparedStatement up = conn.prepareStatement(
+                                "UPDATE detalle_matricula SET estado = 'ACTIVO' WHERE id_matricula = ? AND id_curso_profesor = ?;")) {
+                            up.setInt(1, idMatricula);
+                            up.setInt(2, idCursoProfesor);
+                            up.executeUpdate();
+                        }
+                        conn.commit();
+                        return true;
+                    }
+                }
+            }
+
+            String sqlDet = "INSERT INTO detalle_matricula (id_matricula, id_curso_profesor, estado) VALUES (?, ?, 'ACTIVO');";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDet)) {
+                ps.setInt(1, idMatricula);
+                ps.setInt(2, idCursoProfesor);
+                ps.executeUpdate();
+            } catch (SQLException ex) {
+                if (ex.getErrorCode() == 1062) {
+                    System.out.println("Error: el curso ya esta en esta matricula.");
+                }
+                throw ex;
+            }
 
             conn.commit();
             return true;
 
         } catch (SQLException e) {
             System.out.println("Error al agregar matricula: " + e.getMessage());
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { System.out.println("Rollback: " + ex.getMessage()); }
+            }
             return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { System.out.println("Cierre: " + ex.getMessage()); }
+            }
         }
     }
 
-    public static boolean eliminarMatricula(String codigoMatricula) {
-        String sql = "DELETE FROM detalle_matricula WHERE id_matricula IN "
-                   + "(SELECT id_matricula FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ?);";
+    public static boolean agregarCursoAMatricula(String codigoMatricula, String codigoCurso, String periodo) {
+        String sqlId = "SELECT id_matricula FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ? AND estado = 'ACTIVA';";
+        try (Connection conn = ConexionBD.conectar();
+             PreparedStatement ps = conn.prepareStatement(sqlId)) {
+            ps.setString(1, codigoMatricula);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return false;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean anularMatricula(String codigoMatricula) {
+        Connection conn = null;
+        try {
+            conn = ConexionBD.conectar();
+            if (conn == null) return false;
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE matriculas SET estado = 'ANULADA' WHERE CONCAT('MAT-', id_matricula) = ? AND estado = 'ACTIVA';")) {
+                ps.setString(1, codigoMatricula);
+                if (ps.executeUpdate() == 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE detalle_matricula dm JOIN matriculas m ON dm.id_matricula = m.id_matricula "
+                    + "SET dm.estado = 'INACTIVO' WHERE CONCAT('MAT-', m.id_matricula) = ? AND dm.estado = 'ACTIVO';")) {
+                ps.setString(1, codigoMatricula);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error al anular matricula: " + e.getMessage());
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { System.out.println("Rollback: " + ex.getMessage()); }
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { System.out.println("Cierre: " + ex.getMessage()); }
+            }
+        }
+    }
+
+    public static boolean reactivarMatricula(String codigoMatricula) {
+        Connection conn = null;
+        try {
+            conn = ConexionBD.conectar();
+            if (conn == null) return false;
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE matriculas SET estado = 'ACTIVA' WHERE CONCAT('MAT-', id_matricula) = ? AND estado = 'ANULADA';")) {
+                ps.setString(1, codigoMatricula);
+                if (ps.executeUpdate() == 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE detalle_matricula dm JOIN matriculas m ON dm.id_matricula = m.id_matricula "
+                    + "SET dm.estado = 'ACTIVO' WHERE CONCAT('MAT-', m.id_matricula) = ? AND dm.estado = 'INACTIVO';")) {
+                ps.setString(1, codigoMatricula);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error al reactivar matricula: " + e.getMessage());
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { System.out.println("Rollback: " + ex.getMessage()); }
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { System.out.println("Cierre: " + ex.getMessage()); }
+            }
+        }
+    }
+
+    public static boolean quitarCursoDeMatricula(String codigoMatricula, String codigoCurso) {
+        String sql = "UPDATE detalle_matricula dm "
+                + "JOIN matriculas m ON dm.id_matricula = m.id_matricula "
+                + "JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
+                + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                + "SET dm.estado = 'INACTIVO' "
+                + "WHERE CONCAT('MAT-', m.id_matricula) = ? AND c.codigo = ? AND m.estado = 'ACTIVA' AND dm.estado = 'ACTIVO';";
 
         try (Connection conn = ConexionBD.conectar();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, codigoMatricula);
-            pstmt.executeUpdate();
-
-            String sql2 = "DELETE FROM matriculas WHERE CONCAT('MAT-', id_matricula) = ?;";
-            try (PreparedStatement pstmt2 = conn.prepareStatement(sql2)) {
-                pstmt2.setString(1, codigoMatricula);
-                int filasAfectadas = pstmt2.executeUpdate();
-                return filasAfectadas > 0;
-            }
+            pstmt.setString(2, codigoCurso);
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.out.println("Error al eliminar matricula: " + e.getMessage());
+            System.out.println("Error al quitar curso: " + e.getMessage());
             return false;
         }
+    }
+
+    public static boolean reactivarCursoDeMatricula(String codigoMatricula, String codigoCurso) {
+        String periodo = null;
+        String codigoEstudiante = null;
+        int idCp = -1;
+        for (Matricula m : getMatriculas(false)) {
+            if (m.getCodigoMatricula().equals(codigoMatricula) && m.getCodigoCurso().equals(codigoCurso)) {
+                periodo = m.getPeriodo();
+                codigoEstudiante = m.getCodigoEstudiante();
+                idCp = getIdCursoProfesor(codigoCurso, periodo);
+                break;
+            }
+        }
+        if (idCp == -1 || periodo == null) return false;
+        if (existeTraslapeHorario(codigoEstudiante, periodo, idCp)) {
+            System.out.println("Error: traslape al reactivar curso.");
+            return false;
+        }
+
+        Connection conn = null;
+        try {
+            conn = ConexionBD.conectar();
+            if (conn == null) return false;
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE matriculas SET estado = 'ACTIVA' WHERE CONCAT('MAT-', id_matricula) = ? AND estado = 'ANULADA';")) {
+                ps.setString(1, codigoMatricula);
+                ps.executeUpdate();
+            }
+
+            int filas;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "UPDATE detalle_matricula dm "
+                    + "JOIN matriculas m ON dm.id_matricula = m.id_matricula "
+                    + "JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor "
+                    + "JOIN cursos c ON cp.id_curso = c.id_curso "
+                    + "SET dm.estado = 'ACTIVO' "
+                    + "WHERE CONCAT('MAT-', m.id_matricula) = ? AND c.codigo = ? AND m.estado = 'ACTIVA' AND dm.estado = 'INACTIVO';")) {
+                ps.setString(1, codigoMatricula);
+                ps.setString(2, codigoCurso);
+                filas = ps.executeUpdate();
+            }
+
+            if (filas == 0) {
+                conn.rollback();
+                return false;
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error al reactivar curso: " + e.getMessage());
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { System.out.println("Rollback: " + ex.getMessage()); }
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { System.out.println("Cierre: " + ex.getMessage()); }
+            }
+        }
+    }
+
+    public static boolean eliminarMatricula(String codigoMatricula) {
+        return anularMatricula(codigoMatricula);
     }
 
     public static boolean tieneDatos() {
