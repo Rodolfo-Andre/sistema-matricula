@@ -11,6 +11,8 @@ import modelo.Curso;
 import modelo.Estudiante;
 import modelo.Matricula;
 
+import excepciones.EstudianteInvalidoException;
+
 public class GestorDatos {
 
 
@@ -38,9 +40,12 @@ public class GestorDatos {
         return lista;
     }
 
-    public static void agregarEstudiante(Estudiante estudiante) {
+      // ---------- Sobrecarga #1: recibe un objeto Estudiante ----------JRD
+    public static void agregarEstudiante(Estudiante estudiante) throws EstudianteInvalidoException {
+        validarEstudiante(estudiante);
+
         String sql = "INSERT INTO estudiantes (codigo, dni, nombres, apellidos, id_carrera) VALUES (?, ?, ?, ?, ?);";
-        
+
         try (Connection conn = ConexionBD.conectar();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -49,17 +54,47 @@ public class GestorDatos {
             String apellidos = (partesNombre.length > 1) ? partesNombre[1] : "";
 
             pstmt.setString(1, estudiante.getCodigo());
-            pstmt.setString(2, "DNI" + System.currentTimeMillis() % 100000000); 
+            pstmt.setString(2, "DNI" + System.currentTimeMillis() % 100000000);
             pstmt.setString(3, nombres);
             pstmt.setString(4, apellidos);
-            pstmt.setInt(5, 1); 
-            
+            pstmt.setInt(5, 1);
+
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error al agregar estudiante: " + e.getMessage());
         }
     }
 
+    // ---------- Sobrecarga #2: recibe datos sueltos ----------
+    public static void agregarEstudiante(String codigo, String nombre, String carrera, int ciclo)
+            throws EstudianteInvalidoException {
+        agregarEstudiante(new Estudiante(codigo, nombre, carrera, ciclo));
+    }
+
+    // ---------- Validaciones de negocio ----------
+    private static void validarEstudiante(Estudiante estudiante) throws EstudianteInvalidoException {
+        if (estudiante == null) {
+            throw new EstudianteInvalidoException("El estudiante no puede ser nulo.");
+        }
+        if (estudiante.getCodigo() == null || estudiante.getCodigo().isBlank()) {
+            throw new EstudianteInvalidoException("El código del estudiante no puede estar vacío.");
+        }
+        if (buscarEstudiante(estudiante.getCodigo()) != null) {
+            throw new EstudianteInvalidoException(
+                    "Ya existe un estudiante registrado con el código: " + estudiante.getCodigo());
+        }
+        if (estudiante.getNombre() == null || estudiante.getNombre().isBlank()) {
+            throw new EstudianteInvalidoException("El nombre del estudiante no puede estar vacío.");
+        }
+        if (estudiante.getCarrera() == null || estudiante.getCarrera().isBlank()) {
+            throw new EstudianteInvalidoException("La carrera no puede estar vacía.");
+        }
+        if (estudiante.getCiclo() < 1 || estudiante.getCiclo() > 10) {
+            throw new EstudianteInvalidoException(
+                    "El ciclo debe estar entre 1 y 10 (recibido: " + estudiante.getCiclo() + ").");
+        }
+    }
+ // ---------- Validaciones de negocio (fin JRD)----------
     public static Estudiante buscarEstudiante(String codigo) {
         String sql = "SELECT e.codigo, CONCAT(e.nombres, ' ', e.apellidos) AS nombre_completo, c.nombre AS carrera "
                    + "FROM estudiantes e JOIN carreras c ON e.id_carrera = c.id_carrera "
