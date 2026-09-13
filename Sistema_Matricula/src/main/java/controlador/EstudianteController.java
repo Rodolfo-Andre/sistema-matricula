@@ -1,9 +1,7 @@
 package controlador;
 
-import excepciones.EstudianteInvalidoException;
-import gestor.GestorEstudiantes;
+import gestor.GestorDatos;
 import modelo.Estudiante;
-
 import java.util.List;
 
 /**
@@ -12,34 +10,33 @@ import java.util.List;
  */
 public class EstudianteController {
 
-    private GestorEstudiantes gestor;
+    private GestorDatos gestor;
 
     public EstudianteController() {
-        this.gestor = new GestorEstudiantes();
+        this.gestor = new GestorDatos();
     }
 
     /**
      * Intenta registrar un estudiante.
-     * @return null si todo salió bien, o un mensaje de error legible si algo falló.
+     *
+     * @return null si todo salió bien, o un mensaje de error legible si algo
+     * falló.
      */
     public String registrarEstudiante(String codigo, String nombre, String carrera, int ciclo) {
         try {
-            gestor.agregarEstudiante(codigo, nombre, carrera, ciclo);
+            Estudiante estudiante = new Estudiante();
+            gestor.agregarEstudiante(estudiante);
             return null;
-        } catch (EstudianteInvalidoException e) {
+        } catch (Exception e) {
             return e.getMessage();
         }
     }
 
     public List<Estudiante> obtenerEstudiantes() {
-        return gestor.listarTodos();
+        return gestor.getEstudiantes();
     }
 
     public Estudiante buscarEstudiante(String codigo) {
-        return gestor.buscarPorCodigo(codigo);
-    }
-
-    public void actualizarDesdeBaseDeDatos() {
-        gestor.refrescar();
+        return gestor.buscarEstudiante(codigo);
     }
 }

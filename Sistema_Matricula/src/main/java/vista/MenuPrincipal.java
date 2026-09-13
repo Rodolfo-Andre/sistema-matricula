@@ -19,6 +19,7 @@ public class MenuPrincipal extends JFrame {
     private JPanel panelMenu;
     private PanelReportes panelReportesInstance;
     private PanelEstudiantes panelEstudiantesInstance;
+    private PanelConvalidacion panelConvalidacionInstance;
     public MenuPrincipal() {
         initComponents();
         setTitle("Sistema de Matrícula Universitaria");
@@ -84,12 +85,13 @@ public class MenuPrincipal extends JFrame {
 
         panelReportesInstance = new PanelReportes();
         panelEstudiantesInstance = new PanelEstudiantes();
-
+        panelConvalidacionInstance = new PanelConvalidacion();
+ 
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
         panelContenido.add(panelEstudiantesInstance, "Estudiantes");
         panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
         panelContenido.add(crearPanelInfo("Gestion de Matricula", "Equipo"), "Matricula");
-        panelContenido.add(crearPanelInfo("Convalidacion", "Anthony"), "Convalidacion");
+        panelContenido.add(panelConvalidacionInstance, "Convalidacion");
         panelContenido.add(panelReportesInstance, "Reportes");
         panelCentral.add(panelContenido, BorderLayout.CENTER);
         panelPrincipal.add(panelCentral, BorderLayout.CENTER);
@@ -102,7 +104,10 @@ public class MenuPrincipal extends JFrame {
         });
         btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
         btnMatricula.addActionListener(e -> mostrarPanel("Matricula"));
-        btnConvalidacion.addActionListener(e -> mostrarPanel("Convalidacion"));
+        btnConvalidacion.addActionListener(e -> {
+            //panelConvalidacionInstance.crearInterfaz();
+            mostrarPanel("Convalidacion");
+        });
         btnReportes.addActionListener(e -> abrirPanelConDatos(
                 panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
 

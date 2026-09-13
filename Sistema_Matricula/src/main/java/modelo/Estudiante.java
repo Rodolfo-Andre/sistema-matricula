@@ -1,5 +1,7 @@
 package modelo;
 
+import java.util.Objects;
+
 public class Estudiante {
 
     private int idEstudiante;
@@ -30,7 +32,10 @@ public class Estudiante {
      * (por ejemplo, un estudiante recién admitido).
      */
     public Estudiante(String codigo, String nombre, String carrera) {
-        this(codigo, nombre, carrera, 1);
+        this.codigo = codigo;
+        this.nombres = nombre;
+        this.carrera = carrera;
+        this.ciclo = 1;
     }
 
     // Constructor para actualizaciones con id de carrera
@@ -53,7 +58,7 @@ public class Estudiante {
         this.idCarrera = idCarrera;
         this.ciclo = ciclo;
     }
-
+    
     // Getters y Setters
     public int getIdEstudiante() { return idEstudiante; }
     public void setIdEstudiante(int idEstudiante) { this.idEstudiante = idEstudiante; }
