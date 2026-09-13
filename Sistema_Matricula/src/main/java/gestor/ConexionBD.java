@@ -6,9 +6,9 @@ import java.sql.SQLException;
 
 public class ConexionBD {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/sistema_matricula?useSSL=false&serverTimezone=UTC";
-    private static final String USER = "root";
-    private static final String PASSWORD = ""; //contraseña de  su MySQL 
+    private static final String URL = "jdbc:mysql://localhost:3306/sistema_matricula";
+    private static final String USER = "root";  
+    private static final String PASSWORD = "mysql"; 
 
     public static Connection conectar() {
         Connection conn = null;

@@ -1,36 +1,41 @@
 package modelo;
 
-/**
- * Representa una matrícula de un estudiante en un curso.
- */
 public class Matricula {
-    private String codigoMatricula;
-    private String codigoEstudiante;
-    private String codigoCurso;
+    private int idMatricula;
+    private int idEstudiante;
     private String fechaMatricula;
-    private String estado; // ACTIVA, COMPLETADA, CANCELADA
-    
-    public Matricula(String codigoMatricula, String codigoEstudiante, 
-                     String codigoCurso, String fechaMatricula) {
-        this.codigoMatricula = codigoMatricula;
-        this.codigoEstudiante = codigoEstudiante;
-        this.codigoCurso = codigoCurso;
+    private String periodo;
+
+    public Matricula() {}
+
+    public Matricula(int idMatricula, int idEstudiante, String fechaMatricula, String periodo) {
+        this.idMatricula = idMatricula;
+        this.idEstudiante = idEstudiante;
         this.fechaMatricula = fechaMatricula;
-        this.estado = "ACTIVA";
+        this.periodo = periodo;
     }
-    
-    // Getters y Setters
-    public String getCodigoMatricula() { return codigoMatricula; }
-    public String getCodigoEstudiante() { return codigoEstudiante; }
-    public String getCodigoCurso() { return codigoCurso; }
+
+    public Matricula(int idEstudiante, String fechaMatricula, String periodo) {
+        this.idEstudiante = idEstudiante;
+        this.fechaMatricula = fechaMatricula;
+        this.periodo = periodo;
+    }
+
+    public int getIdMatricula() { return idMatricula; }
+    public void setIdMatricula(int idMatricula) { this.idMatricula = idMatricula; }
+
+    public int getIdEstudiante() { return idEstudiante; }
+    public void setIdEstudiante(int idEstudiante) { this.idEstudiante = idEstudiante; }
+
     public String getFechaMatricula() { return fechaMatricula; }
-    public String getEstado() { return estado; }
-    
-    public void setEstado(String estado) { this.estado = estado; }
-    
+    public void setFechaMatricula(String fechaMatricula) { this.fechaMatricula = fechaMatricula; }
+
+    public String getPeriodo() { return periodo; }
+    public void setPeriodo(String periodo) { this.periodo = periodo; }
+
     @Override
     public String toString() {
-        return String.format("Matrícula: %s | Estudiante: %s | Curso: %s | Estado: %s",
-            codigoMatricula, codigoEstudiante, codigoCurso, estado);
+        return String.format("ID Matrícula: %d | ID Estudiante: %d | Fecha: %s | Periodo: %s",
+                idMatricula, idEstudiante, fechaMatricula, periodo);
     }
 }
