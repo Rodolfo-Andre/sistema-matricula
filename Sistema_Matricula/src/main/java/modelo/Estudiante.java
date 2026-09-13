@@ -22,7 +22,15 @@ public class Estudiante {
         this.apellidos = apellidos;
         this.idCarrera = idCarrera;
         this.carrera = carrera;
-        this.ciclo = ciclo;
+        this.ciclo = (ciclo < 1) ? 1 : ciclo; // evita ciclos inválidos por defecto
+    }
+
+    /**
+     * Sobrecarga: crea un estudiante asumiendo que ingresa en el ciclo 1
+     * (por ejemplo, un estudiante recién admitido).
+     */
+    public Estudiante(String codigo, String nombre, String carrera) {
+        this(codigo, nombre, carrera, 1);
     }
 
     // Constructor para actualizaciones con id de carrera
@@ -70,6 +78,19 @@ public class Estudiante {
 
     public int getCiclo() { return ciclo; }
     public void setCiclo(int ciclo) { this.ciclo = ciclo; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Estudiante)) return false;
+        Estudiante otro = (Estudiante) obj;
+        return Objects.equals(codigo, otro.codigo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(codigo);
+    }
 
     @Override
     public String toString() {

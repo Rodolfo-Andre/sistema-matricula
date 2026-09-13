@@ -8,6 +8,8 @@ import modelo.Estudiante;
 import modelo.Matricula;
 import modelo.Usuario;
 
+import excepciones.EstudianteInvalidoException;
+
 public class GestorDatos {
 
     private static final EstudianteDAO estudianteDAO = new EstudianteDAO();
