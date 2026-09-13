@@ -61,7 +61,7 @@ public class Convalidacion {
         System.out.println("Curso a convalidar: " + cursoDestino.getNombre());
         System.out.println("Estado: " + estado);
     }
-}
+
 public void validarConvalidacion(double nota) 
         throws ConvalidacionException {
 
@@ -78,4 +78,5 @@ public void validarConvalidacion(double nota)
     }
 
     System.out.println("Curso apto para convalidación.");
+    }
 }
