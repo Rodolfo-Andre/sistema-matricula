@@ -1,3 +1,4 @@
+
 DROP DATABASE IF EXISTS sistema_matricula;
 
 CREATE DATABASE sistema_matricula
@@ -109,6 +110,10 @@ CREATE TABLE detalle_matricula (
         FOREIGN KEY (id_curso_profesor) REFERENCES curso_profesor(id_curso_profesor) 
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+-- =========================================================
+-- DATOS PRUEBA
+-- =========================================================
 
 -- Roles para autenticación
 INSERT INTO roles (nombre) VALUES 
@@ -226,3 +231,252 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
 (7, 7),
 (8, 8),
 (9, 9);
+
+
+-- =========================================================
+-- PROCEDIMIENTOS ALMACENADOS 
+-- =========================================================
+
+DELIMITER //
+
+-- LOGIN
+CREATE PROCEDURE sp_ValidarUsuario(
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255)
+)
+BEGIN
+    SELECT u.id_usuario, u.username, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor
+    FROM usuarios u
+    INNER JOIN roles r ON u.id_rol = r.id_rol
+    WHERE u.username = p_username 
+      AND u.password = p_password 
+      AND u.estado = 1;
+END //
+
+
+-- CRUD ESTUDIANTES
+CREATE PROCEDURE sp_ListarEstudiantes()
+BEGIN
+    SELECT e.id_estudiante, 
+           e.codigo, 
+           e.dni, 
+           e.nombres, 
+           e.apellidos, 
+           c.nombre AS carrera, 
+           e.ciclo, 
+           e.id_carrera
+    FROM estudiantes e
+    INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+    ORDER BY e.id_estudiante DESC;
+END //
+
+CREATE PROCEDURE sp_InsertarEstudiante(
+    IN p_codigo VARCHAR(20),
+    IN p_dni VARCHAR(15),
+    IN p_nombres VARCHAR(100),
+    IN p_apellidos VARCHAR(100),
+    IN p_id_carrera INT,
+    IN p_ciclo INT
+)
+BEGIN
+    INSERT INTO estudiantes (codigo, dni, nombres, apellidos, id_carrera, ciclo)
+    VALUES (p_codigo, p_dni, p_nombres, p_apellidos, p_id_carrera, p_ciclo);
+END //
+
+CREATE PROCEDURE sp_ActualizarEstudiante(
+    IN p_id_estudiante INT,
+    IN p_codigo VARCHAR(20),
+    IN p_dni VARCHAR(15),
+    IN p_nombres VARCHAR(100),
+    IN p_apellidos VARCHAR(100),
+    IN p_id_carrera INT,
+    IN p_ciclo INT
+)
+BEGIN
+    UPDATE estudiantes
+    SET codigo = p_codigo,
+        dni = p_dni,
+        nombres = p_nombres,
+        apellidos = p_apellidos,
+        id_carrera = p_id_carrera,
+        ciclo = p_ciclo
+    WHERE id_estudiante = p_id_estudiante;
+END //
+
+CREATE PROCEDURE sp_EliminarEstudiante(
+    IN p_id_estudiante INT
+)
+BEGIN
+    DELETE FROM estudiantes WHERE id_estudiante = p_id_estudiante;
+END //
+
+CREATE PROCEDURE sp_BuscarEstudiantePorCodigo(
+    IN p_codigo VARCHAR(20)
+)
+BEGIN
+    SELECT e.id_estudiante, e.codigo, e.dni, e.nombres, e.apellidos, 
+           c.nombre AS carrera, e.ciclo, e.id_carrera
+    FROM estudiantes e
+    INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+    WHERE e.codigo = p_codigo;
+END //
+
+CREATE PROCEDURE sp_BuscarEstudiantesPorFiltro(
+    IN p_filtro VARCHAR(100)
+)
+BEGIN
+    SELECT e.id_estudiante, e.codigo, e.dni, e.nombres, e.apellidos, 
+           c.nombre AS carrera, e.ciclo, e.id_carrera
+    FROM estudiantes e
+    INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+    WHERE e.codigo LIKE CONCAT('%', p_filtro, '%')
+       OR e.dni LIKE CONCAT('%', p_filtro, '%')
+       OR e.nombres LIKE CONCAT('%', p_filtro, '%')
+       OR e.apellidos LIKE CONCAT('%', p_filtro, '%')
+    ORDER BY e.apellidos;
+END //
+
+-- CARRERAS Y CURSOS
+CREATE PROCEDURE sp_ListarCarreras()
+BEGIN
+    SELECT id_carrera, nombre FROM carreras ORDER BY nombre;
+END //
+
+CREATE PROCEDURE sp_ListarCursos()
+BEGIN
+    SELECT id_curso, codigo, nombre, creditos FROM cursos ORDER BY nombre;
+END //
+
+CREATE PROCEDURE sp_InsertarCurso(
+    IN p_codigo VARCHAR(20),
+    IN p_nombre VARCHAR(100),
+    IN p_creditos INT
+)
+BEGIN
+    INSERT INTO cursos (codigo, nombre, creditos)
+    VALUES (p_codigo, p_nombre, p_creditos);
+END //
+
+CREATE PROCEDURE sp_ActualizarCurso(
+    IN p_id_curso INT,
+    IN p_codigo VARCHAR(20),
+    IN p_nombre VARCHAR(100),
+    IN p_creditos INT
+)
+BEGIN
+    UPDATE cursos
+    SET codigo = p_codigo,
+        nombre = p_nombre,
+        creditos = p_creditos
+    WHERE id_curso = p_id_curso;
+END //
+
+CREATE PROCEDURE sp_EliminarCurso(
+    IN p_id_curso INT
+)
+BEGIN
+    DELETE FROM cursos WHERE id_curso = p_id_curso;
+END //
+
+-- MATRÍCULA
+CREATE PROCEDURE sp_ListarSeccionesDisponibles(
+    IN p_periodo VARCHAR(10)
+)
+BEGIN
+    SELECT cp.id_curso_profesor, 
+           c.codigo AS codigo_curso, 
+           c.nombre AS curso, 
+           c.creditos,
+           CONCAT(p.nombres, ' ', p.apellidos) AS docente,
+           h.dia, h.hora_inicio, h.hora_fin, h.aula,
+           cp.periodo
+    FROM curso_profesor cp
+    INNER JOIN cursos c ON cp.id_curso = c.id_curso
+    INNER JOIN profesores p ON cp.id_profesor = p.id_profesor
+    INNER JOIN horarios h ON cp.id_horario = h.id_horario
+    WHERE cp.periodo = p_periodo;
+END //
+
+CREATE PROCEDURE sp_RegistrarMatricula(
+    IN p_id_estudiante INT,
+    IN p_periodo VARCHAR(10),
+    OUT p_id_matricula_generado INT
+)
+BEGIN
+    INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo)
+    VALUES (p_id_estudiante, CURDATE(), p_periodo);
+    
+    SET p_id_matricula_generado = LAST_INSERT_ID();
+END //
+
+CREATE PROCEDURE sp_AgregarDetalleMatricula(
+    IN p_id_matricula INT,
+    IN p_id_curso_profesor INT
+)
+BEGIN
+    INSERT INTO detalle_matricula (id_matricula, id_curso_profesor)
+    VALUES (p_id_matricula, p_id_curso_profesor);
+END //
+
+-- REPORTES
+CREATE PROCEDURE sp_ReporteMatriculasPorEstudiante(
+    IN p_id_estudiante INT
+)
+BEGIN
+    SELECT m.id_matricula, m.fecha_matricula, m.periodo, 
+           c.codigo AS codigo_curso, c.nombre AS curso, c.creditos, 
+           CONCAT(p.nombres, ' ', p.apellidos) AS docente, 
+           h.dia, h.hora_inicio, h.hora_fin, h.aula
+    FROM matriculas m
+    INNER JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula
+    INNER JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor
+    INNER JOIN cursos c ON cp.id_curso = c.id_curso
+    INNER JOIN profesores p ON cp.id_profesor = p.id_profesor
+    INNER JOIN horarios h ON cp.id_horario = h.id_horario
+    WHERE m.id_estudiante = p_id_estudiante
+    ORDER BY m.fecha_matricula DESC;
+END //
+
+CREATE PROCEDURE sp_ReporteAlumnosPorCurso(
+    IN p_id_curso INT,
+    IN p_periodo VARCHAR(10)
+)
+BEGIN
+    SELECT c.nombre AS curso,
+           e.codigo AS codigo_estudiante,
+           CONCAT(e.apellidos, ', ', e.nombres) AS estudiante,
+           car.nombre AS carrera,
+           m.fecha_matricula
+    FROM detalle_matricula dm
+    INNER JOIN matriculas m ON dm.id_matricula = m.id_matricula
+    INNER JOIN estudiantes e ON m.id_estudiante = e.id_estudiante
+    INNER JOIN carreras car ON e.id_carrera = car.id_carrera
+    INNER JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor
+    INNER JOIN cursos c ON cp.id_curso = c.id_curso
+    WHERE cp.id_curso = p_id_curso AND cp.periodo = p_periodo
+    ORDER BY e.apellidos;
+END //
+
+CREATE PROCEDURE sp_ReporteConsolidadoMatriculas(
+    IN p_periodo VARCHAR(10)
+)
+BEGIN
+    SELECT m.id_matricula,
+           e.codigo AS codigo_estudiante,
+           CONCAT(e.apellidos, ' ', e.nombres) AS estudiante,
+           car.nombre AS carrera,
+           m.fecha_matricula,
+           COUNT(dm.id_curso_profesor) AS total_cursos,
+           SUM(c.creditos) AS total_creditos
+    FROM matriculas m
+    INNER JOIN estudiantes e ON m.id_estudiante = e.id_estudiante
+    INNER JOIN carreras car ON e.id_carrera = car.id_carrera
+    INNER JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula
+    INNER JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor
+    INNER JOIN cursos c ON cp.id_curso = c.id_curso
+    WHERE m.periodo = p_periodo
+    GROUP BY m.id_matricula, e.codigo, e.apellidos, e.nombres, car.nombre, m.fecha_matricula
+    ORDER BY m.fecha_matricula DESC;
+END //
+
+DELIMITER ;
