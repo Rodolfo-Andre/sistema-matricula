@@ -18,8 +18,7 @@ public class MenuPrincipal extends JFrame {
     private CardLayout cardLayout;
     private JPanel panelMenu;
     private PanelReportes panelReportesInstance;
-    private PanelMatricula panelMatriculaInstance;
-
+    private PanelEstudiantes panelEstudiantesInstance;
     public MenuPrincipal() {
         initComponents();
         setTitle("Sistema de Matrícula Universitaria");
@@ -84,24 +83,25 @@ public class MenuPrincipal extends JFrame {
         panelContenido.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         panelReportesInstance = new PanelReportes();
-        panelMatriculaInstance = new PanelMatricula();
+        panelEstudiantesInstance = new PanelEstudiantes();
 
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
-        panelContenido.add(crearPanelInfo("Gestion de Estudiantes", "Jayson"), "Estudiantes");
+        panelContenido.add(panelEstudiantesInstance, "Estudiantes");
         panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
-        panelContenido.add(panelMatriculaInstance, "Matricula");
+        panelContenido.add(crearPanelInfo("Gestion de Matricula", "Equipo"), "Matricula");
         panelContenido.add(crearPanelInfo("Convalidacion", "Anthony"), "Convalidacion");
         panelContenido.add(panelReportesInstance, "Reportes");
-
         panelCentral.add(panelContenido, BorderLayout.CENTER);
         panelPrincipal.add(panelCentral, BorderLayout.CENTER);
 
         panelPrincipal.add(crearFooter(), BorderLayout.SOUTH);
 
-        btnEstudiantes.addActionListener(e -> mostrarPanel("Estudiantes"));
+        btnEstudiantes.addActionListener(e -> {
+            panelEstudiantesInstance.cargarDatosTabla(); 
+            mostrarPanel("Estudiantes");
+        });
         btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
-        btnMatricula.addActionListener(e -> abrirPanelConDatos(
-                panelMatriculaInstance::cargarDatos, "Matricula", "matriculas"));
+        btnMatricula.addActionListener(e -> mostrarPanel("Matricula"));
         btnConvalidacion.addActionListener(e -> mostrarPanel("Convalidacion"));
         btnReportes.addActionListener(e -> abrirPanelConDatos(
                 panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
