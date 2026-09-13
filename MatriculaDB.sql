@@ -86,7 +86,8 @@ CREATE TABLE curso_profesor (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_cp_horario 
         FOREIGN KEY (id_horario) REFERENCES horarios(id_horario) 
-        ON DELETE RESTRICT ON UPDATE CASCADE
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    INDEX idx_cp_periodo (periodo)
 ) ENGINE=InnoDB;
 
 CREATE TABLE matriculas (
@@ -94,21 +95,29 @@ CREATE TABLE matriculas (
     id_estudiante INT NOT NULL,
     fecha_matricula DATE NOT NULL,
     periodo VARCHAR(10) NOT NULL,
+    estado ENUM('ACTIVA','ANULADA') NOT NULL DEFAULT 'ACTIVA',
     CONSTRAINT fk_matricula_estudiante 
         FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) 
-        ON DELETE RESTRICT ON UPDATE CASCADE
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT uq_matricula_est_periodo UNIQUE (id_estudiante, periodo),
+    INDEX idx_matriculas_periodo (periodo),
+    INDEX idx_matriculas_est_periodo (id_estudiante, periodo)
 ) ENGINE=InnoDB;
 
 CREATE TABLE detalle_matricula (
     id_detalle INT AUTO_INCREMENT PRIMARY KEY,
     id_matricula INT NOT NULL,
     id_curso_profesor INT NOT NULL,
+    estado ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO',
     CONSTRAINT fk_dm_matricula 
         FOREIGN KEY (id_matricula) REFERENCES matriculas(id_matricula) 
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_dm_cursoprofesor 
         FOREIGN KEY (id_curso_profesor) REFERENCES curso_profesor(id_curso_profesor) 
-        ON DELETE RESTRICT ON UPDATE CASCADE
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT uq_detalle_mat_cursoprof UNIQUE (id_matricula, id_curso_profesor),
+    INDEX idx_detalle_idmat (id_matricula),
+    INDEX idx_detalle_mat_estado (id_matricula, estado)
 ) ENGINE=InnoDB;
 
 -- =========================================================
