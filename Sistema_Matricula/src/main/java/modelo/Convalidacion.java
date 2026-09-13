@@ -62,3 +62,20 @@ public class Convalidacion {
         System.out.println("Estado: " + estado);
     }
 }
+public void validarConvalidacion(double nota) 
+        throws ConvalidacionException {
+
+    if (nota < 0 || nota > 20) {
+        throw new ConvalidacionException(
+            "La nota debe estar entre 0 y 20."
+        );
+    }
+
+    if (nota < 11) {
+        throw new ConvalidacionException(
+            "El curso no puede ser convalidado porque la nota es menor a 11."
+        );
+    }
+
+    System.out.println("Curso apto para convalidación.");
+}
