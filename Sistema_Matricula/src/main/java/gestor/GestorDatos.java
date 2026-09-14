@@ -90,7 +90,55 @@ public class GestorDatos {
     // MÉTODOS DE MATRÍCULAS
     // ==========================================
     public static List<Matricula> getMatriculas() {
-        return matriculaDAO.listar();
+        return matriculaDAO.listar(true);
+    }
+
+    public static List<Matricula> getMatriculas(boolean soloActivas) {
+        return matriculaDAO.listar(soloActivas);
+    }
+
+    public static List<Matricula> getMatriculasAnuladas() {
+        return matriculaDAO.listarAnuladas();
+    }
+
+    public static int getTotalCabecerasActivas() {
+        return matriculaDAO.getTotalCabecerasActivas();
+    }
+
+    public static boolean agregarMatricula(Matricula matricula) {
+        return matriculaDAO.agregarMatricula(matricula);
+    }
+
+    public static boolean anularMatricula(String codigoMatricula) {
+        return matriculaDAO.anularPeriodo(codigoMatricula);
+    }
+
+    public static boolean quitarCursoDeMatricula(String codigoMatricula, String codigoCurso) {
+        return matriculaDAO.quitarCurso(codigoMatricula, codigoCurso);
+    }
+
+    public static boolean reactivarCursoDeMatricula(String codigoMatricula, String codigoCurso) {
+        return matriculaDAO.reactivarCurso(codigoMatricula, codigoCurso);
+    }
+
+    public static boolean existeMatricula(String codigoEstudiante, String codigoCurso, String periodo) {
+        return matriculaDAO.existeMatricula(codigoEstudiante, codigoCurso, periodo);
+    }
+
+    public static boolean existeCursoProfesor(String codigoCurso, String periodo) {
+        return matriculaDAO.existeCursoProfesor(codigoCurso, periodo);
+    }
+
+    public static int getIdCursoProfesor(String codigoCurso, String periodo) {
+        return matriculaDAO.getIdCursoProfesor(codigoCurso, periodo);
+    }
+
+    public static boolean existeTraslapeHorario(String codigoEstudiante, String periodo, int idCursoProfesor) {
+        return matriculaDAO.existeTraslapeHorario(codigoEstudiante, periodo, idCursoProfesor);
+    }
+
+    public static boolean eliminarMatricula(String codigoMatricula) {
+        return matriculaDAO.anularPeriodo(codigoMatricula);
     }
 
     public static boolean registrarMatriculaCompleta(Matricula matricula, List<Integer> idCursosProfesor) {
@@ -128,7 +176,7 @@ public class GestorDatos {
     }
 
     public static int getTotalMatriculas() {
-        return matriculaDAO.listar().size();
+        return matriculaDAO.getTotalCabecerasActivas();
     }
 
     public static String getReporteCompleto() {
