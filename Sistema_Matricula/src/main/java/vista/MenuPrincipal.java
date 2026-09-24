@@ -1,8 +1,10 @@
 package vista;
 
 import gestor.GestorDatos;
+import modelo.Usuario;
 import javax.swing.*;
 import java.awt.*;
+import java.net.URL;
 
 public class MenuPrincipal extends JFrame {
 
@@ -21,9 +23,17 @@ public class MenuPrincipal extends JFrame {
     private PanelEstudiantes panelEstudiantesInstance;
     private PanelConvalidacion panelConvalidacionInstance;
     private PanelMatricula panelMatriculaInstance;
-    public MenuPrincipal() {
+    private PanelUsuarios panelUsuariosInstance;
+    private PanelPortalEstudiante panelPortalEstudianteInstance;
+    
+
+    private Usuario usuarioLogueado;
+
+
+    public MenuPrincipal(Usuario usuario) {
+        this.usuarioLogueado = usuario;
         initComponents();
-        setTitle("Sistema de Matrícula Universitaria");
+        setTitle("Sistema de Matrícula Universitaria - " + usuario.getUsername());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 700);
         setLocationRelativeTo(null);
@@ -55,21 +65,42 @@ public class MenuPrincipal extends JFrame {
         panelMenu.add(crearSeparador());
         panelMenu.add(Box.createRigidArea(new Dimension(0, 15)));
 
+        JButton btnUsuarios = crearBotonMenu("Gestion de Usuarios");
         JButton btnEstudiantes = crearBotonMenu("Gestion de Estudiantes");
         JButton btnCursos = crearBotonMenu("Gestion de Cursos");
         JButton btnMatricula = crearBotonMenu("Gestion de Matricula");
         JButton btnConvalidacion = crearBotonMenu("Convalidacion");
         JButton btnReportes = crearBotonMenu("Reportes");
+        
+        JButton btnMisCursosEstudiante = crearBotonMenu("Mis Cursos / Horario");
+        JButton btnMatriculaLineaEstudiante = crearBotonMenu("Matrícula en Línea");
 
-        panelMenu.add(btnEstudiantes);
-        panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
-        panelMenu.add(btnCursos);
-        panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
-        panelMenu.add(btnMatricula);
-        panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
-        panelMenu.add(btnConvalidacion);
-        panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
-        panelMenu.add(btnReportes);
+        int idRol = usuarioLogueado.getIdRol();
+
+        if (idRol == 1) { // Admin: Ve todo
+            panelMenu.add(btnUsuarios); 
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnEstudiantes);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnCursos);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnMatricula);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnConvalidacion);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnReportes);
+        } else if (idRol == 2) { // Profesor: Cursos, Matricula, Convalidacion
+            panelMenu.add(btnCursos);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnMatricula);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnConvalidacion);
+        } else if (idRol == 3) { // Estudiante: Solo ve su portal (sin convalidación)
+            panelMenu.add(btnMisCursosEstudiante);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnMatriculaLineaEstudiante);
+        }
+
         panelMenu.add(Box.createRigidArea(new Dimension(0, 20)));
         panelMenu.add(crearSeparador());
         panelMenu.add(Box.createRigidArea(new Dimension(0, 15)));
@@ -84,39 +115,65 @@ public class MenuPrincipal extends JFrame {
         panelContenido.setBackground(COLOR_FONDO);
         panelContenido.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
+        // Instancias de todos los paneles
         panelReportesInstance = new PanelReportes();
         panelEstudiantesInstance = new PanelEstudiantes();
         panelConvalidacionInstance = new PanelConvalidacion();
         panelMatriculaInstance = new PanelMatricula();
- 
+        panelUsuariosInstance = new PanelUsuarios();
+        panelPortalEstudianteInstance = new PanelPortalEstudiante(usuarioLogueado);
+
+        // Agregamos los paneles al CardLayout
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
+        panelContenido.add(panelUsuariosInstance, "Usuarios"); 
+        panelContenido.add(panelPortalEstudianteInstance, "PortalEstudiante");
         panelContenido.add(panelEstudiantesInstance, "Estudiantes");
         panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
         panelContenido.add(panelMatriculaInstance, "Matricula");
         panelContenido.add(panelConvalidacionInstance, "Convalidacion");
         panelContenido.add(panelReportesInstance, "Reportes");
+        
         panelCentral.add(panelContenido, BorderLayout.CENTER);
         panelPrincipal.add(panelCentral, BorderLayout.CENTER);
 
         panelPrincipal.add(crearFooter(), BorderLayout.SOUTH);
 
+        // --- EVENTOS GENERALES (Admin y Profesor) ---
+        btnUsuarios.addActionListener(e -> {
+            panelUsuariosInstance.cargarDatosTabla(); 
+            mostrarPanel("Usuarios");
+        }); 
         btnEstudiantes.addActionListener(e -> {
             panelEstudiantesInstance.cargarDatosTabla(); 
             mostrarPanel("Estudiantes");
         });
         btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
+
         btnMatricula.addActionListener(e -> abrirPanelConDatos(
                 panelMatriculaInstance::cargarDatos, "Matricula", "matrícula"));
+                
         btnConvalidacion.addActionListener(e -> {
-            //panelConvalidacionInstance.crearInterfaz();
             mostrarPanel("Convalidacion");
         });
         btnReportes.addActionListener(e -> abrirPanelConDatos(
                 panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
 
+        // --- EVENTOS EXCLUSIVOS DEL ESTUDIANTE ---
+        btnMisCursosEstudiante.addActionListener(e -> {
+            panelPortalEstudianteInstance.cargarDatosIniciales();
+            panelPortalEstudianteInstance.mostrarVista("Cursos"); 
+            mostrarPanel("PortalEstudiante");
+        });
+        
+        btnMatriculaLineaEstudiante.addActionListener(e -> {
+            panelPortalEstudianteInstance.cargarDatosIniciales();
+            panelPortalEstudianteInstance.mostrarVista("Matricula"); 
+            mostrarPanel("PortalEstudiante");
+        });
+
         btnSalir.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "Esta seguro que desea salir del sistema?",
+                    "¿Está seguro que desea salir del sistema?",
                     "Confirmar salida",
                     JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
@@ -196,7 +253,6 @@ public class MenuPrincipal extends JFrame {
                     boton.setForeground(COLOR_TEXTO);
                 }
             }
-
             @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 if (!texto.equals("MENU PRINCIPAL")) {
@@ -212,40 +268,47 @@ public class MenuPrincipal extends JFrame {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(COLOR_FONDO);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(15, 15, 15, 15);
+        gbc.insets = new Insets(10, 15, 10, 15);
+        gbc.gridx = 0; 
+
+        URL urlBanner = getClass().getResource("/imagenes/banner_matricula.jpg");
+        
+        if (urlBanner != null) {
+            ImageIcon bannerOriginal = new ImageIcon(urlBanner);
+            Image imagenEscalada = bannerOriginal.getImage().getScaledInstance(700, 200, Image.SCALE_SMOOTH);
+            JLabel lblBanner = new JLabel(new ImageIcon(imagenEscalada));
+            gbc.gridy = 0;
+            panel.add(lblBanner, gbc);
+        } else {
+            System.err.println("⚠️ ERROR: No se encontró la imagen en /imagenes/banner_matricula.jpeg");
+        }
 
         JLabel lblTitulo = new JLabel("SISTEMA DE MATRICULA");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 44));
         lblTitulo.setForeground(COLOR_TITULO);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         panel.add(lblTitulo, gbc);
 
-        JLabel lblSubtitulo = new JLabel("Universidad ");
+        String nombreMostrado = usuarioLogueado.getNombreReal() != null ? usuarioLogueado.getNombreReal() : usuarioLogueado.getUsername();
+        JLabel lblSubtitulo = new JLabel("Bienvenido(a), " + nombreMostrado);
         lblSubtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 24));
         lblSubtitulo.setForeground(new Color(100, 100, 120));
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         panel.add(lblSubtitulo, gbc);
 
         JLabel lblLinea = new JLabel("________________________________");
         lblLinea.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         lblLinea.setForeground(COLOR_DORADO);
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         panel.add(lblLinea, gbc);
 
         JLabel lblDescripcion = new JLabel();
-        lblDescripcion.setText("<html><center>Bienvenido al Sistema de Gestion de Matricula<br>"
-                + "Seleccione una opcion del menu lateral para comenzar</center></html>");
+        lblDescripcion.setText("<html><center>Seleccione una opcion del menu lateral para comenzar<br>"
+                + "Sus permisos están configurados según su rol.</center></html>");
         lblDescripcion.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         lblDescripcion.setForeground(COLOR_SUBTEXTO);
-        gbc.gridy = 3;
-        panel.add(lblDescripcion, gbc);
-
-        JLabel lblVersion = new JLabel("Version 1.0");
-        lblVersion.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-        lblVersion.setForeground(new Color(180, 180, 180));
         gbc.gridy = 4;
-        panel.add(lblVersion, gbc);
+        panel.add(lblDescripcion, gbc);
 
         return panel;
     }
@@ -274,12 +337,6 @@ public class MenuPrincipal extends JFrame {
         lblDesarrollador.setForeground(COLOR_SUBTEXTO);
         gbc.gridy = 2;
         panel.add(lblDesarrollador, gbc);
-
-        JLabel lblEstado = new JLabel("Modulo en desarrollo...");
-        lblEstado.setFont(new Font("Segoe UI", Font.ITALIC, 16));
-        lblEstado.setForeground(new Color(180, 180, 180));
-        gbc.gridy = 3;
-        panel.add(lblEstado, gbc);
 
         return panel;
     }
@@ -321,15 +378,14 @@ public class MenuPrincipal extends JFrame {
 
     public static void main(String[] args) {
         gestor.ConexionBD.inicializarBD();
-
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        SwingUtilities.invokeLater(() -> new MenuPrincipal().setVisible(true));
+        Usuario usuarioPrueba = new Usuario(1, "Administrador (Prueba)", "123", 1, "Admin", null, null, true);
+        usuarioPrueba.setNombreReal("Administrador del Sistema");
+        SwingUtilities.invokeLater(() -> new MenuPrincipal(usuarioPrueba).setVisible(true));
     }
 }
-
-

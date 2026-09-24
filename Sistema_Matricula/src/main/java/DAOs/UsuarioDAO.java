@@ -8,35 +8,42 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import modelo.Usuario;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class UsuarioDAO {
 
-    public Usuario autenticar(String username, String password) {
-        String sql = "{CALL sp_AutenticarUsuario(?, ?)}";
+    public Usuario autenticar(String username, String passwordIngresada) {
+        String sql = "{CALL sp_ValidarUsuario(?)}";
 
         try (Connection conn = ConexionBD.conectar();
              CallableStatement cstmt = conn.prepareCall(sql)) {
 
             cstmt.setString(1, username);
-            cstmt.setString(2, password);
 
             try (ResultSet rs = cstmt.executeQuery()) {
                 if (rs.next()) {
-                    return new Usuario(
-                        rs.getInt("id_usuario"),
-                        rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getInt("id_rol"),
-                        (Integer) rs.getObject("id_estudiante"),
-                        (Integer) rs.getObject("id_profesor"),
-                        rs.getBoolean("estado")
-                    );
+                    String hashBD = rs.getString("password");
+                    if (BCrypt.checkpw(passwordIngresada, hashBD)) {
+                        Usuario usuarioLogueado = new Usuario(
+                            rs.getInt("id_usuario"),
+                            rs.getString("username"),
+                            hashBD,
+                            rs.getInt("id_rol"),
+                            rs.getString("rol"), 
+                            (Integer) rs.getObject("id_estudiante"),
+                            (Integer) rs.getObject("id_profesor"),
+                            true 
+                        );
+                        usuarioLogueado.setNombreReal(rs.getString("nombre_real"));
+                        
+                        return usuarioLogueado;
+                    }
                 }
             }
         } catch (SQLException e) {
             System.err.println("Error en autenticación: " + e.getMessage());
         }
-        return null;
+        return null; 
     }
 
     public List<Usuario> listar() {
@@ -53,6 +60,7 @@ public class UsuarioDAO {
                     rs.getString("username"),
                     rs.getString("password"),
                     rs.getInt("id_rol"),
+                    rs.getString("rol"), 
                     (Integer) rs.getObject("id_estudiante"),
                     (Integer) rs.getObject("id_profesor"),
                     rs.getBoolean("estado")
@@ -137,6 +145,21 @@ public class UsuarioDAO {
             return cstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al cambiar estado del usuario: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean eliminar(int idUsuario) {
+        String sql = "{CALL sp_EliminarUsuario(?)}";
+
+        try (Connection conn = ConexionBD.conectar();
+             CallableStatement cstmt = conn.prepareCall(sql)) {
+
+            cstmt.setInt(1, idUsuario);
+
+            return cstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error al eliminar usuario: " + e.getMessage());
             return false;
         }
     }
