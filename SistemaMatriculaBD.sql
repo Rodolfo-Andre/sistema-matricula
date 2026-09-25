@@ -169,11 +169,12 @@ INSERT INTO estudiantes (codigo, dni, nombres, apellidos, id_carrera, ciclo) VAL
 ('E010', '70123456', 'Camila', 'Navarro', 2, 5);
  
 -- Cuentas de Usuario para Login
+-- Claves cifradas con BCrypt (verificacion en Java): admin=admin123, estudiantes=estudiante123, docente=docente123
 INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor) VALUES 
-('admin', 'admin123', 1, NULL, NULL),
-('E001', 'estudiante123', 3, 1, NULL),
-('E002', 'estudiante123', 3, 2, NULL),
-('prof_carlos', 'docente123', 2, NULL, 1);
+('admin', '$2a$10$eJQuVkf1fKXkcTaNmaRFfO8YiUZGMLJn2SRakv.1FZE7nJYB.JUCa', 1, NULL, NULL),
+('E001', '$2a$10$pnIwM8i0QyzND/QBD/8iLuC.ExOc1V.T3LbtWdqDKPkFlqCajoFEO', 3, 1, NULL),
+('E002', '$2a$10$2pKgmy2AbS82HU0uwkdcAuBB9XdMcCVl/RrE/fTU61qr1aXN0ePI.', 3, 2, NULL),
+('prof_carlos', '$2a$10$tC1Py.KVR9BfG1EVXwQ8Ru8R3jYgtv/JbYTWsUGXMcmmyeju6GU52', 2, NULL, 1);
  
 -- Cursos
 INSERT INTO cursos (codigo, nombre, creditos) VALUES 
@@ -247,18 +248,78 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
  
 DELIMITER //
  
--- LOGIN
+-- LOGIN (1 parametro: la clave se verifica en Java con BCrypt)
 CREATE PROCEDURE sp_ValidarUsuario(
-    IN p_username VARCHAR(50),
-    IN p_password VARCHAR(255)
+    IN p_username VARCHAR(50)
 )
 BEGIN
-    SELECT u.id_usuario, u.username, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor
+    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor, u.estado,
+           COALESCE(CONCAT(e.nombres, ' ', e.apellidos), CONCAT(p.nombres, ' ', p.apellidos), u.username) AS nombre_real
     FROM usuarios u
     INNER JOIN roles r ON u.id_rol = r.id_rol
-    WHERE u.username = p_username 
-      AND u.password = p_password 
+    LEFT JOIN estudiantes e ON e.id_estudiante = u.id_estudiante
+    LEFT JOIN profesores p ON p.id_profesor = u.id_profesor
+    WHERE u.username = p_username
       AND u.estado = 1;
+END //
+
+-- GESTION DE USUARIOS (las claves llegan ya cifradas con BCrypt desde la aplicacion)
+CREATE PROCEDURE sp_ListarUsuarios()
+BEGIN
+    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor, u.estado,
+           COALESCE(CONCAT(e.nombres, ' ', e.apellidos), CONCAT(p.nombres, ' ', p.apellidos), u.username) AS nombre_real
+    FROM usuarios u
+    INNER JOIN roles r ON u.id_rol = r.id_rol
+    LEFT JOIN estudiantes e ON e.id_estudiante = u.id_estudiante
+    LEFT JOIN profesores p ON p.id_profesor = u.id_profesor
+    ORDER BY u.username;
+END //
+
+CREATE PROCEDURE sp_InsertarUsuario(
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255),
+    IN p_id_rol INT,
+    IN p_id_estudiante INT,
+    IN p_id_profesor INT
+)
+BEGIN
+    INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor, estado)
+    VALUES (p_username, p_password, p_id_rol, p_id_estudiante, p_id_profesor, 1);
+END //
+
+CREATE PROCEDURE sp_ActualizarUsuario(
+    IN p_id_usuario INT,
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255),
+    IN p_id_rol INT,
+    IN p_id_estudiante INT,
+    IN p_id_profesor INT,
+    IN p_estado BOOLEAN
+)
+BEGIN
+    UPDATE usuarios
+    SET username = p_username,
+        password = p_password,
+        id_rol = p_id_rol,
+        id_estudiante = p_id_estudiante,
+        id_profesor = p_id_profesor,
+        estado = p_estado
+    WHERE id_usuario = p_id_usuario;
+END //
+
+CREATE PROCEDURE sp_CambiarEstadoUsuario(
+    IN p_id_usuario INT,
+    IN p_estado BOOLEAN
+)
+BEGIN
+    UPDATE usuarios SET estado = p_estado WHERE id_usuario = p_id_usuario;
+END //
+
+CREATE PROCEDURE sp_EliminarUsuario(
+    IN p_id_usuario INT
+)
+BEGIN
+    DELETE FROM usuarios WHERE id_usuario = p_id_usuario;
 END //
  
  
@@ -384,6 +445,13 @@ CREATE PROCEDURE sp_EliminarCurso(
 )
 BEGIN
     DELETE FROM cursos WHERE id_curso = p_id_curso;
+END //
+
+CREATE PROCEDURE sp_BuscarCursoPorCodigo(
+    IN p_codigo VARCHAR(20)
+)
+BEGIN
+    SELECT id_curso, codigo, nombre, creditos FROM cursos WHERE codigo = p_codigo;
 END //
  
 -- REPORTES
