@@ -45,12 +45,35 @@ public class Convalidacion {
         return estado;
     }
 
-    public void evaluarConvalidacion() {
-        if (cursoOrigen.getCreditos() >= cursoDestino.getCreditos()) {
-            estado = "APROBADA";
-        } else {
-            estado = "RECHAZADA";
-        }
+    public void evaluarConvalidacion(double nota)
+        throws ConvalidacionException {
+
+    // Validar que la nota este dentro del rango permitido
+    if (nota < 0 || nota > 20) {
+        throw new ConvalidacionException(
+            "La nota debe estar entre 0 y 20."
+        );
+    }
+
+    // Validar que la nota sea aprobatoria
+    if (nota < 11) {
+        estado = "RECHAZADA";
+        throw new ConvalidacionException(
+            "Convalidacion rechazada: la nota es menor a 11."
+        );
+    }
+
+    // Validar que los creditos sean suficientes
+    if (cursoOrigen.getCreditos() < cursoDestino.getCreditos()) {
+        estado = "RECHAZADA";
+        throw new ConvalidacionException(
+            "Convalidacion rechazada: los creditos del curso de origen son insuficientes."
+        );
+    }
+
+    // Si cumple todas las condiciones
+    estado = "APROBADA";
+    System.out.println("Convalidacion aprobada correctamente.");
     }
 
     public void mostrarDatos() {
@@ -60,23 +83,5 @@ public class Convalidacion {
         System.out.println("Curso de origen: " + cursoOrigen.getNombre());
         System.out.println("Curso a convalidar: " + cursoDestino.getNombre());
         System.out.println("Estado: " + estado);
-    }
-
-public void validarConvalidacion(double nota) 
-        throws ConvalidacionException {
-
-    if (nota < 0 || nota > 20) {
-        throw new ConvalidacionException(
-            "La nota debe estar entre 0 y 20."
-        );
-    }
-
-    if (nota < 11) {
-        throw new ConvalidacionException(
-            "El curso no puede ser convalidado porque la nota es menor a 11."
-        );
-    }
-
-    System.out.println("Curso apto para convalidación.");
     }
 }
