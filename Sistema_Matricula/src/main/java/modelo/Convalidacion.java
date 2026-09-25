@@ -79,7 +79,7 @@ public class Convalidacion {
     public void mostrarDatos() {
         System.out.println("----- CONVALIDACION DE CURSO -----");
         System.out.println("Codigo: " + codigo);
-        System.out.println("Estudiante: " + estudiante.getNombre());
+        System.out.println("Estudiante: " + estudiante.getNombres());
         System.out.println("Curso de origen: " + cursoOrigen.getNombre());
         System.out.println("Curso a convalidar: " + cursoDestino.getNombre());
         System.out.println("Estado: " + estado);
