@@ -10,6 +10,10 @@ package vista;
  */
 import java.awt.*;
 import javax.swing.*;
+import modelo.Convalidacion;
+import modelo.ConvalidacionException;
+import modelo.Curso;
+import modelo.Estudiante;
 
 public class PanelConvalidacion extends JPanel {
 
@@ -18,6 +22,7 @@ public class PanelConvalidacion extends JPanel {
     private JTextField txtCreditosOrigen;
     private JTextField txtCursoDestino;
     private JTextField txtCreditosDestino;
+    private JTextField txtNota;
 
     private JLabel lblResultado;
 
@@ -61,6 +66,7 @@ public class PanelConvalidacion extends JPanel {
 
         txtCursoDestino = new JTextField(20);
         txtCreditosDestino = new JTextField(20);
+        txtNota = new JTextField(20);
 
 
         agregarCampo(
@@ -102,6 +108,14 @@ public class PanelConvalidacion extends JPanel {
                 "Creditos del curso a convalidar:",
                 txtCreditosDestino
         );
+        
+        agregarCampo(
+        formulario,
+        gbc,
+        5,
+        "Nota obtenida:",
+        txtNota
+        );
 
 
         // BOTON
@@ -113,7 +127,7 @@ public class PanelConvalidacion extends JPanel {
         );
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
 
         formulario.add(btnEvaluar, gbc);
@@ -131,7 +145,7 @@ public class PanelConvalidacion extends JPanel {
                 SwingConstants.CENTER
         );
 
-        gbc.gridy = 6;
+        gbc.gridy = 7;
 
         formulario.add(lblResultado, gbc);
 
@@ -165,40 +179,89 @@ public class PanelConvalidacion extends JPanel {
 
     private void evaluar() {
 
-        try {
+    try {
+        // Obtener datos ingresados en la interfaz
+        String nombreEstudiante = txtEstudiante.getText().trim();
+        String nombreCursoOrigen = txtCursoOrigen.getText().trim();
+        String nombreCursoDestino = txtCursoDestino.getText().trim();
 
-            int creditosOrigen =
-                    Integer.parseInt(
-                            txtCreditosOrigen.getText()
-                    );
+        int creditosOrigen =
+                Integer.parseInt(txtCreditosOrigen.getText().trim());
 
-            int creditosDestino =
-                    Integer.parseInt(
-                            txtCreditosDestino.getText()
-                    );
+        int creditosDestino =
+                Integer.parseInt(txtCreditosDestino.getText().trim());
 
+        double nota =
+                Double.parseDouble(txtNota.getText().trim());
 
-            if (creditosOrigen >= creditosDestino) {
-
-                lblResultado.setText(
-                        "Estado: APROBADA"
-                );
-
-            } else {
-
-                lblResultado.setText(
-                        "Estado: RECHAZADA"
-                );
-            }
-
-        } catch (NumberFormatException e) {
+        // Validar campos de texto
+        if (nombreEstudiante.isEmpty()
+                || nombreCursoOrigen.isEmpty()
+                || nombreCursoDestino.isEmpty()) {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Ingrese correctamente los creditos.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
+                    "Complete todos los campos.",
+                    "Advertencia",
+                    JOptionPane.WARNING_MESSAGE
             );
+
+            return;
         }
+
+        // Crear objetos necesarios para la convalidacion
+        Estudiante estudiante = new Estudiante(
+        "TEMP",
+        nombreEstudiante,
+        "No especificada"
+        );
+
+        Curso cursoOrigen = new Curso(
+                "ORIGEN",
+                nombreCursoOrigen,
+                creditosOrigen
+        );
+
+        Curso cursoDestino = new Curso(
+                "DESTINO",
+                nombreCursoDestino,
+                creditosDestino
+        );
+
+        // Crear la convalidacion
+        Convalidacion convalidacion = new Convalidacion(
+                1,
+                estudiante,
+                cursoOrigen,
+                cursoDestino
+        );
+
+        // Utilizar la logica de negocio de Convalidacion.java
+        convalidacion.evaluarConvalidacion(nota);
+
+        lblResultado.setText(
+                "Estado: " + convalidacion.getEstado()
+        );
+
+    } catch (NumberFormatException e) {
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Los creditos y la nota deben ser valores numericos.",
+                "Datos incorrectos",
+                JOptionPane.ERROR_MESSAGE
+        );
+
+    } catch (ConvalidacionException e) {
+
+        lblResultado.setText("Estado: RECHAZADA");
+
+        JOptionPane.showMessageDialog(
+                this,
+                e.getMessage(),
+                "Convalidacion rechazada",
+                JOptionPane.WARNING_MESSAGE
+        );
     }
+}
 }
