@@ -241,6 +241,7 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
 (9, 9);
  
  
+ select *from  usuarios;
 -- =========================================================
 -- PROCEDIMIENTOS ALMACENADOS 
 -- =========================================================
@@ -248,20 +249,97 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
 DELIMITER //
  
 -- LOGIN
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS sp_ValidarUsuario //
+
 CREATE PROCEDURE sp_ValidarUsuario(
-    IN p_username VARCHAR(50),
-    IN p_password VARCHAR(255)
+    IN p_username VARCHAR(50)
 )
 BEGIN
-    SELECT u.id_usuario, u.username, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor
+    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, 
+           u.id_estudiante, u.id_profesor,
+           -- Agregamos la búsqueda del nombre real:
+           CASE 
+               WHEN u.id_estudiante IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM estudiantes WHERE id_estudiante = u.id_estudiante)
+               WHEN u.id_profesor IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM profesores WHERE id_profesor = u.id_profesor)
+               ELSE 'Administrador del Sistema'
+           END AS nombre_real
     FROM usuarios u
     INNER JOIN roles r ON u.id_rol = r.id_rol
     WHERE u.username = p_username 
-      AND u.password = p_password 
       AND u.estado = 1;
 END //
+
+DELIMITER ;
  
- 
+-- CRUD Usuarios
+DELIMITER //
+
+-- LISTAR USUARIOS 
+CREATE PROCEDURE sp_ListarUsuarios()
+BEGIN
+    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, 
+           u.id_estudiante, u.id_profesor, u.estado
+    FROM usuarios u
+    INNER JOIN roles r ON u.id_rol = r.id_rol
+    ORDER BY u.id_usuario DESC;
+END //
+
+-- INSERTAR USUARIO 
+CREATE PROCEDURE sp_InsertarUsuario(
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255),
+    IN p_id_rol INT,
+    IN p_id_estudiante INT,
+    IN p_id_profesor INT
+)
+BEGIN
+    INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor, estado)
+    VALUES (p_username, p_password, p_id_rol, p_id_estudiante, p_id_profesor, 1);
+END //
+
+--  ACTUALIZAR USUARIO  
+CREATE PROCEDURE sp_ActualizarUsuario(
+    IN p_id_usuario INT,
+    IN p_username VARCHAR(50),
+    IN p_password VARCHAR(255),
+    IN p_id_rol INT,
+    IN p_id_estudiante INT,
+    IN p_id_profesor INT,
+    IN p_estado TINYINT
+)
+BEGIN
+    UPDATE usuarios
+    SET username = p_username,
+        password = p_password,
+        id_rol = p_id_rol,
+        id_estudiante = p_id_estudiante,
+        id_profesor = p_id_profesor,
+        estado = p_estado
+    WHERE id_usuario = p_id_usuario;
+END //
+
+-- CAMBIAR ESTADO 
+CREATE PROCEDURE sp_CambiarEstadoUsuario(
+    IN p_id_usuario INT,
+    IN p_estado TINYINT
+)
+BEGIN
+    UPDATE usuarios
+    SET estado = p_estado
+    WHERE id_usuario = p_id_usuario;
+END //
+
+-- ELIMINAR USUARIO 
+CREATE PROCEDURE sp_EliminarUsuario(
+    IN p_id_usuario INT
+)
+BEGIN
+    DELETE FROM usuarios WHERE id_usuario = p_id_usuario;
+END //
+
+DELIMITER ;
 -- CRUD ESTUDIANTES
 CREATE PROCEDURE sp_ListarEstudiantes()
 BEGIN
