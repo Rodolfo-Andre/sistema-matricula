@@ -55,7 +55,8 @@ public class UsuarioDAO {
              ResultSet rs = cstmt.executeQuery()) {
 
             while (rs.next()) {
-                lista.add(new Usuario(
+                // 1. Creamos el objeto usuario
+                Usuario u = new Usuario(
                     rs.getInt("id_usuario"),
                     rs.getString("username"),
                     rs.getString("password"),
@@ -64,7 +65,13 @@ public class UsuarioDAO {
                     (Integer) rs.getObject("id_estudiante"),
                     (Integer) rs.getObject("id_profesor"),
                     rs.getBoolean("estado")
-                ));
+                );
+                
+                // 2. Le asignamos el nombre real que viene de la BD
+                u.setNombreReal(rs.getString("nombre_real"));
+                
+                // 3. Lo agregamos a la lista
+                lista.add(u);
             }
         } catch (SQLException e) {
             System.err.println("Error al listar usuarios: " + e.getMessage());

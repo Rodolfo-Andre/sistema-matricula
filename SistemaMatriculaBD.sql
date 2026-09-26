@@ -240,16 +240,70 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
 (8, 8),
 (9, 9);
  
- 
+
+-- Insertar 
+INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor) VALUES 
+('admin', '$2a$12$HfXezO9Q1POJb8Ag3S0eaeqlqScVq97oPLexGTNx0e0xuYZjq6BjW', 1, NULL, NULL),
+('E001', '$2a$12$bEkqErdmLWszYbg9voFWf.Pb0U2RT3vzdoKNx6dQ0DyTPCcj2AHjO', 3, 1, NULL),
+('E002', '$2a$12$bEkqErdmLWszYbg9voFWf.Pb0U2RT3vzdoKNx6dQ0DyTPCcj2AHjO', 3, 2, NULL),
+('prof_carlos', '$2a$12$OhjzeGeEsC7QQjAZfDA.geoAihcTQD37pKXfe/L3cilhYO0L/.NN6', 2, NULL, 1);
  select *from  usuarios;
 -- =========================================================
 -- PROCEDIMIENTOS ALMACENADOS 
 -- =========================================================
  
 DELIMITER //
+-- LISTAR PROFESORES
+DROP PROCEDURE IF EXISTS sp_ListarProfesores //
+CREATE PROCEDURE sp_ListarProfesores()
+BEGIN
+    SELECT id_profesor, dni, nombres, apellidos, especialidad
+    FROM profesores
+    ORDER BY apellidos, nombres;
+END //
+
+-- INSERTAR PROFESOR
+DROP PROCEDURE IF EXISTS sp_InsertarProfesor //
+CREATE PROCEDURE sp_InsertarProfesor(
+    IN p_dni VARCHAR(15),
+    IN p_nombres VARCHAR(100),
+    IN p_apellidos VARCHAR(100),
+    IN p_especialidad VARCHAR(100)
+)
+BEGIN
+    INSERT INTO profesores (dni, nombres, apellidos, especialidad)
+    VALUES (p_dni, p_nombres, p_apellidos, p_especialidad);
+END //
+
+-- ACTUALIZAR PROFESOR
+DROP PROCEDURE IF EXISTS sp_ActualizarProfesor //
+CREATE PROCEDURE sp_ActualizarProfesor(
+    IN p_id_profesor INT,
+    IN p_dni VARCHAR(15),
+    IN p_nombres VARCHAR(100),
+    IN p_apellidos VARCHAR(100),
+    IN p_especialidad VARCHAR(100)
+)
+BEGIN
+    UPDATE profesores
+    SET dni = p_dni,
+        nombres = p_nombres,
+        apellidos = p_apellidos,
+        especialidad = p_especialidad
+    WHERE id_profesor = p_id_profesor;
+END //
+
+-- ELIMINAR PROFESOR
+DROP PROCEDURE IF EXISTS sp_EliminarProfesor //
+CREATE PROCEDURE sp_EliminarProfesor(
+    IN p_id_profesor INT
+)
+BEGIN
+    DELETE FROM profesores WHERE id_profesor = p_id_profesor;
+END //
+
  
 -- LOGIN
-DELIMITER //
 
 DROP PROCEDURE IF EXISTS sp_ValidarUsuario //
 
@@ -271,19 +325,24 @@ BEGIN
       AND u.estado = 1;
 END //
 
-DELIMITER ;
- 
--- CRUD Usuarios
-DELIMITER //
 
+-- CRUD Usuarios
 -- LISTAR USUARIOS 
+
+DROP PROCEDURE IF EXISTS sp_ListarUsuarios //
+
 CREATE PROCEDURE sp_ListarUsuarios()
 BEGIN
     SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, 
-           u.id_estudiante, u.id_profesor, u.estado
+           u.id_estudiante, u.id_profesor, u.estado,
+           -- Agregamos la búsqueda del nombre real igual que en el login:
+           CASE 
+               WHEN u.id_estudiante IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM estudiantes WHERE id_estudiante = u.id_estudiante)
+               WHEN u.id_profesor IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM profesores WHERE id_profesor = u.id_profesor)
+               ELSE 'Administrador del Sistema'
+           END AS nombre_real
     FROM usuarios u
-    INNER JOIN roles r ON u.id_rol = r.id_rol
-    ORDER BY u.id_usuario DESC;
+    INNER JOIN roles r ON u.id_rol = r.id_rol;
 END //
 
 -- INSERTAR USUARIO 
@@ -339,7 +398,6 @@ BEGIN
     DELETE FROM usuarios WHERE id_usuario = p_id_usuario;
 END //
 
-DELIMITER ;
 -- CRUD ESTUDIANTES
 CREATE PROCEDURE sp_ListarEstudiantes()
 BEGIN
