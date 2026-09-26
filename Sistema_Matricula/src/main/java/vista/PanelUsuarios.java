@@ -16,7 +16,7 @@ public class PanelUsuarios extends JPanel {
     private static final Color COLOR_FONDO = new Color(255, 248, 220);
     private static final Color COLOR_TITULO = new Color(0, 51, 102);
 
-    // Tipografías agrandadas
+ 
     private static final Font FONT_TITULO_PRINCIPAL = new Font("Segoe UI", Font.BOLD, 26);
     private static final Font FONT_SECCION = new Font("Segoe UI", Font.BOLD, 15);
     private static final Font FONT_ETIQUETA = new Font("Segoe UI", Font.BOLD, 14);
@@ -29,7 +29,6 @@ public class PanelUsuarios extends JPanel {
     private List<Usuario> listaUsuariosCache;
     private Usuario usuarioSeleccionado = null;
 
-    // Componentes del Formulario (Izquierda)
     private JTextField txtUsername;
     private JPasswordField txtPassword;
     private JComboBox<String> cmbRol;
@@ -43,7 +42,7 @@ public class PanelUsuarios extends JPanel {
     private JButton btnEliminar;
     private JButton btnLimpiar;
 
-    // Componentes de Búsqueda y Tabla (Derecha)
+ 
     private JTextField txtBuscarUsername;
     private JTextField txtBuscarNombre;
     private JButton btnBuscarUsername;
@@ -62,14 +61,12 @@ public class PanelUsuarios extends JPanel {
         setBackground(COLOR_FONDO);
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        // TÍTULO SUPERIOR
         JLabel lblTituloPrincipal = new JLabel("GESTIÓN DE USUARIOS DEL SISTEMA", SwingConstants.CENTER);
         lblTituloPrincipal.setFont(FONT_TITULO_PRINCIPAL);
         lblTituloPrincipal.setForeground(COLOR_TITULO);
         lblTituloPrincipal.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         add(lblTituloPrincipal, BorderLayout.NORTH);
 
-        // CONTENEDOR CENTRAL
         JPanel panelCentral = new JPanel(new BorderLayout(12, 12));
         panelCentral.setOpaque(false);
 
@@ -79,7 +76,6 @@ public class PanelUsuarios extends JPanel {
         add(panelCentral, BorderLayout.CENTER);
     }
 
-    // PANEL IZQUIERDO: FORMULARIO
     private JPanel crearPanelFormulario() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
@@ -99,7 +95,6 @@ public class PanelUsuarios extends JPanel {
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Username
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.35;
         JLabel lblUser = new JLabel("Username:");
         lblUser.setFont(FONT_ETIQUETA);
@@ -111,7 +106,6 @@ public class PanelUsuarios extends JPanel {
         txtUsername.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(txtUsername, gbc);
 
-        // Password
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.35;
         JLabel lblPass = new JLabel("Password:");
         lblPass.setFont(FONT_ETIQUETA);
@@ -124,7 +118,6 @@ public class PanelUsuarios extends JPanel {
         txtPassword.setToolTipText("Dejar en blanco al editar para no cambiarla");
         pnlCampos.add(txtPassword, gbc);
 
-        // Rol
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.35;
         JLabel lblRol = new JLabel("Rol:");
         lblRol.setFont(FONT_ETIQUETA);
@@ -137,7 +130,7 @@ public class PanelUsuarios extends JPanel {
         cmbRol.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(cmbRol, gbc);
 
-        // ID Estudiante
+  
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.35;
         JLabel lblIdEst = new JLabel("ID Estudiante:");
         lblIdEst.setFont(FONT_ETIQUETA);
@@ -149,7 +142,6 @@ public class PanelUsuarios extends JPanel {
         txtIdEstudiante.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(txtIdEstudiante, gbc);
 
-        // ID Profesor
         gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.35;
         JLabel lblIdProf = new JLabel("ID Profesor:");
         lblIdProf.setFont(FONT_ETIQUETA);
@@ -161,7 +153,6 @@ public class PanelUsuarios extends JPanel {
         txtIdProfesor.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(txtIdProfesor, gbc);
 
-        // Estado Actual
         gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.35;
         JLabel lblEstadoTag = new JLabel("Estado:");
         lblEstadoTag.setFont(FONT_ETIQUETA);
@@ -175,7 +166,6 @@ public class PanelUsuarios extends JPanel {
 
         panel.add(pnlCampos, BorderLayout.NORTH);
 
-        // Botones inferiores
         JPanel pnlBotones = new JPanel(new GridLayout(3, 2, 8, 8));
         pnlBotones.setOpaque(false);
         pnlBotones.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -183,7 +173,7 @@ public class PanelUsuarios extends JPanel {
         btnGuardar = new JButton("Guardar");
         btnActualizar = new JButton("Actualizar");
         btnCambiarEstado = new JButton("Suspender/Act.");
-        btnEliminar = new JButton("Eliminar Físico");
+        btnEliminar = new JButton("Eliminar");
         btnLimpiar = new JButton("Limpiar");
 
         JButton[] botones = {btnGuardar, btnActualizar, btnCambiarEstado, btnEliminar, btnLimpiar};
@@ -209,7 +199,6 @@ public class PanelUsuarios extends JPanel {
         return panel;
     }
 
-    // PANEL DERECHO: FILTROS Y TABLA
     private JPanel crearPanelTabla() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setOpaque(false);
@@ -222,7 +211,6 @@ public class PanelUsuarios extends JPanel {
                 COLOR_TITULO
         ));
 
-        // Subpanel Filtros de Búsqueda
         JPanel pnlFiltros = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 10));
         pnlFiltros.setOpaque(false);
         pnlFiltros.setBorder(BorderFactory.createTitledBorder(
@@ -274,7 +262,6 @@ public class PanelUsuarios extends JPanel {
 
         panel.add(pnlFiltros, BorderLayout.NORTH);
 
-        // Tabla con celdas y filas más altas
         String[] columnas = {"ID", "Username", "Nombre Real", "Rol", "ID Est.", "ID Prof.", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
@@ -308,8 +295,6 @@ public class PanelUsuarios extends JPanel {
 
         return panel;
     }
-
-    // --- ACCIONES CRUD Y MANEJO DE DATOS ---
 
     public void cargarDatosTabla() {
         modeloTabla.setRowCount(0);
@@ -473,7 +458,6 @@ public class PanelUsuarios extends JPanel {
         tablaUsuarios.clearSelection();
     }
 
-    // --- FILTROS DE BÚSQUEDA ---
 
     private void filtrarPorUsername() {
         String texto = txtBuscarUsername.getText().trim().toLowerCase();

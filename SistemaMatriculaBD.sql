@@ -255,12 +255,15 @@ INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor) VA
 DELIMITER //
 -- LISTAR PROFESORES
 DROP PROCEDURE IF EXISTS sp_ListarProfesores //
+
 CREATE PROCEDURE sp_ListarProfesores()
 BEGIN
     SELECT id_profesor, dni, nombres, apellidos, especialidad
     FROM profesores
-    ORDER BY apellidos, nombres;
+    ORDER BY id_profesor DESC;
 END //
+
+DELIMITER ;
 
 -- INSERTAR PROFESOR
 DROP PROCEDURE IF EXISTS sp_InsertarProfesor //
@@ -391,6 +394,8 @@ BEGIN
 END //
 
 -- ELIMINAR USUARIO 
+DROP PROCEDURE IF EXISTS sp_EliminarUsuario //
+
 CREATE PROCEDURE sp_EliminarUsuario(
     IN p_id_usuario INT
 )

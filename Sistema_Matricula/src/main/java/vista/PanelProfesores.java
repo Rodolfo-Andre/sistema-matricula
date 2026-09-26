@@ -15,7 +15,6 @@ public class PanelProfesores extends JPanel {
     private static final Color COLOR_FONDO = new Color(255, 248, 220);
     private static final Color COLOR_TITULO = new Color(0, 51, 102);
 
-    // Tipografías agrandadas
     private static final Font FONT_TITULO_PRINCIPAL = new Font("Segoe UI", Font.BOLD, 26);
     private static final Font FONT_SECCION = new Font("Segoe UI", Font.BOLD, 15);
     private static final Font FONT_ETIQUETA = new Font("Segoe UI", Font.BOLD, 14);
@@ -28,7 +27,6 @@ public class PanelProfesores extends JPanel {
     private List<Profesor> listaProfesoresCache;
     private int idProfesorSeleccionado = -1;
 
-    // Componentes del Formulario (Izquierda)
     private JTextField txtDni;
     private JTextField txtNombres;
     private JTextField txtApellidos;
@@ -38,7 +36,6 @@ public class PanelProfesores extends JPanel {
     private JButton btnEliminar;
     private JButton btnLimpiar;
 
-    // Componentes de Búsqueda y Tabla (Derecha)
     private JTextField txtBuscarDni;
     private JTextField txtBuscarNombre;
     private JButton btnBuscarDni;
@@ -57,14 +54,12 @@ public class PanelProfesores extends JPanel {
         setBackground(COLOR_FONDO);
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        // TÍTULO SUPERIOR
         JLabel lblTituloPrincipal = new JLabel("GESTIÓN DE PROFESORES", SwingConstants.CENTER);
         lblTituloPrincipal.setFont(FONT_TITULO_PRINCIPAL);
         lblTituloPrincipal.setForeground(COLOR_TITULO);
         lblTituloPrincipal.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         add(lblTituloPrincipal, BorderLayout.NORTH);
 
-        // CONTENEDOR CENTRAL
         JPanel panelCentral = new JPanel(new BorderLayout(12, 12));
         panelCentral.setOpaque(false);
 
@@ -74,7 +69,6 @@ public class PanelProfesores extends JPanel {
         add(panelCentral, BorderLayout.CENTER);
     }
 
-    // PANEL IZQUIERDO: FORMULARIO
     private JPanel crearPanelFormulario() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
@@ -106,7 +100,6 @@ public class PanelProfesores extends JPanel {
         txtDni.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(txtDni, gbc);
 
-        // Nombres
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.35;
         JLabel lblNombres = new JLabel("Nombres:");
         lblNombres.setFont(FONT_ETIQUETA);
@@ -118,7 +111,6 @@ public class PanelProfesores extends JPanel {
         txtNombres.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(txtNombres, gbc);
 
-        // Apellidos
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.35;
         JLabel lblApellidos = new JLabel("Apellidos:");
         lblApellidos.setFont(FONT_ETIQUETA);
@@ -130,7 +122,6 @@ public class PanelProfesores extends JPanel {
         txtApellidos.setPreferredSize(new Dimension(0, 30));
         pnlCampos.add(txtApellidos, gbc);
 
-        // Especialidad
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.35;
         JLabel lblEsp = new JLabel("Especialidad:");
         lblEsp.setFont(FONT_ETIQUETA);
@@ -144,7 +135,6 @@ public class PanelProfesores extends JPanel {
 
         panel.add(pnlCampos, BorderLayout.NORTH);
 
-        // Botones inferiores del formulario
         JPanel pnlBotones = new JPanel(new GridLayout(2, 2, 10, 10));
         pnlBotones.setOpaque(false);
         pnlBotones.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -175,7 +165,6 @@ public class PanelProfesores extends JPanel {
         return panel;
     }
 
-    // PANEL DERECHO: FILTROS Y TABLA
     private JPanel crearPanelTabla() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setOpaque(false);
@@ -188,7 +177,6 @@ public class PanelProfesores extends JPanel {
                 COLOR_TITULO
         ));
 
-        // Subpanel Filtros de Búsqueda
         JPanel pnlFiltros = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 10));
         pnlFiltros.setOpaque(false);
         pnlFiltros.setBorder(BorderFactory.createTitledBorder(
@@ -240,7 +228,6 @@ public class PanelProfesores extends JPanel {
 
         panel.add(pnlFiltros, BorderLayout.NORTH);
 
-        // Tabla con filas y fuentes más grandes
         String[] columnas = {"ID", "DNI", "Nombres", "Apellidos", "Especialidad"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
@@ -272,8 +259,6 @@ public class PanelProfesores extends JPanel {
 
         return panel;
     }
-
-    // --- ACCIONES CRUD ---
 
     public void cargarDatosTabla() {
         modeloTabla.setRowCount(0);

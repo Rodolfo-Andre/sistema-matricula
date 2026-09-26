@@ -122,7 +122,7 @@ public class MenuPrincipal extends JFrame {
         // Inicialización de instancias de paneles
         panelReportesInstance = new PanelReportes();
         panelEstudiantesInstance = new PanelEstudiantes();
-        panelProfesoresInstance = new PanelProfesores(); // Instanciado correctamente
+        panelProfesoresInstance = new PanelProfesores(); 
         panelConvalidacionInstance = new PanelConvalidacion();
         panelMatriculaInstance = new PanelMatricula();
         panelUsuariosInstance = new PanelUsuarios();
@@ -144,7 +144,7 @@ public class MenuPrincipal extends JFrame {
 
         panelPrincipal.add(crearFooter(), BorderLayout.SOUTH);
 
-        // --- EVENTOS GENERALES ---
+        // --- BOTONES ---
         btnUsuarios.addActionListener(e -> {
             panelUsuariosInstance.cargarDatosTabla(); 
             mostrarPanel("Usuarios");
@@ -166,7 +166,7 @@ public class MenuPrincipal extends JFrame {
         btnReportes.addActionListener(e -> abrirPanelConDatos(
                 panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
 
-        // --- EVENTOS EXCLUSIVOS DEL ESTUDIANTE ---
+        // --- BOTON EXCLUSIVOS DEL ESTUDIANTE ---
         btnMisCursosEstudiante.addActionListener(e -> {
             panelPortalEstudianteInstance.cargarDatosIniciales();
             panelPortalEstudianteInstance.mostrarVista("Cursos"); 
@@ -179,7 +179,6 @@ public class MenuPrincipal extends JFrame {
             mostrarPanel("PortalEstudiante");
         });
 
-        // --- EVENTO SALIR ---
         btnSalir.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "¿Está seguro que desea salir del sistema?",
