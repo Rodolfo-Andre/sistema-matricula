@@ -136,7 +136,6 @@ public class MenuPrincipal extends JFrame {
         panelContenido.add(panelEstudiantesInstance, "Estudiantes");
         panelContenido.add(panelCursosInstance, "Cursos");
         panelContenido.add(panelProfesoresInstance, "Profesores");
-        panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
         panelContenido.add(panelMatriculaInstance, "Matricula");
         panelContenido.add(panelConvalidacionInstance, "Convalidacion");
         panelContenido.add(panelReportesInstance, "Reportes");
@@ -325,34 +324,6 @@ public class MenuPrincipal extends JFrame {
         lblDescripcion.setForeground(COLOR_SUBTEXTO);
         gbc.gridy = 4;
         panel.add(lblDescripcion, gbc);
-
-        return panel;
-    }
-
-    private JPanel crearPanelInfo(String titulo, String desarrollador) {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(15, 15, 15, 15);
-
-        JLabel lblTitulo = new JLabel(titulo);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 32));
-        lblTitulo.setForeground(COLOR_TITULO);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(lblTitulo, gbc);
-
-        JLabel lblLinea = new JLabel("-----------------------------");
-        lblLinea.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        lblLinea.setForeground(COLOR_DORADO);
-        gbc.gridy = 1;
-        panel.add(lblLinea, gbc);
-
-        JLabel lblDesarrollador = new JLabel("Modulo desarrollado por: " + desarrollador);
-        lblDesarrollador.setFont(new Font("Segoe UI", Font.PLAIN, 20));
-        lblDesarrollador.setForeground(COLOR_SUBTEXTO);
-        gbc.gridy = 2;
-        panel.add(lblDesarrollador, gbc);
 
         return panel;
     }
