@@ -241,40 +241,118 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
 (8, 8),
 (9, 9);
  
- 
+
+-- Insertar 
+INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor) VALUES 
+('admin', '$2a$12$HfXezO9Q1POJb8Ag3S0eaeqlqScVq97oPLexGTNx0e0xuYZjq6BjW', 1, NULL, NULL),
+('E001', '$2a$12$bEkqErdmLWszYbg9voFWf.Pb0U2RT3vzdoKNx6dQ0DyTPCcj2AHjO', 3, 1, NULL),
+('E002', '$2a$12$bEkqErdmLWszYbg9voFWf.Pb0U2RT3vzdoKNx6dQ0DyTPCcj2AHjO', 3, 2, NULL),
+('prof_carlos', '$2a$12$OhjzeGeEsC7QQjAZfDA.geoAihcTQD37pKXfe/L3cilhYO0L/.NN6', 2, NULL, 1);
+ select *from  usuarios;
 -- =========================================================
 -- PROCEDIMIENTOS ALMACENADOS 
 -- =========================================================
  
 DELIMITER //
+-- LISTAR PROFESORES
+DROP PROCEDURE IF EXISTS sp_ListarProfesores //
+
+CREATE PROCEDURE sp_ListarProfesores()
+BEGIN
+    SELECT id_profesor, dni, nombres, apellidos, especialidad
+    FROM profesores
+    ORDER BY id_profesor DESC;
+END //
+
+DELIMITER ;
+
+-- INSERTAR PROFESOR
+DROP PROCEDURE IF EXISTS sp_InsertarProfesor //
+CREATE PROCEDURE sp_InsertarProfesor(
+    IN p_dni VARCHAR(15),
+    IN p_nombres VARCHAR(100),
+    IN p_apellidos VARCHAR(100),
+    IN p_especialidad VARCHAR(100)
+)
+BEGIN
+    INSERT INTO profesores (dni, nombres, apellidos, especialidad)
+    VALUES (p_dni, p_nombres, p_apellidos, p_especialidad);
+END //
+
+-- ACTUALIZAR PROFESOR
+DROP PROCEDURE IF EXISTS sp_ActualizarProfesor //
+CREATE PROCEDURE sp_ActualizarProfesor(
+    IN p_id_profesor INT,
+    IN p_dni VARCHAR(15),
+    IN p_nombres VARCHAR(100),
+    IN p_apellidos VARCHAR(100),
+    IN p_especialidad VARCHAR(100)
+)
+BEGIN
+    UPDATE profesores
+    SET dni = p_dni,
+        nombres = p_nombres,
+        apellidos = p_apellidos,
+        especialidad = p_especialidad
+    WHERE id_profesor = p_id_profesor;
+END //
+
+-- ELIMINAR PROFESOR
+DROP PROCEDURE IF EXISTS sp_EliminarProfesor //
+CREATE PROCEDURE sp_EliminarProfesor(
+    IN p_id_profesor INT
+)
+BEGIN
+    DELETE FROM profesores WHERE id_profesor = p_id_profesor;
+END //
+
  
--- LOGIN (1 parametro: la clave se verifica en Java con BCrypt)
+-- LOGIN
+
+DROP PROCEDURE IF EXISTS sp_ValidarUsuario //
+
 CREATE PROCEDURE sp_ValidarUsuario(
     IN p_username VARCHAR(50)
 )
 BEGIN
-    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor, u.estado,
-           COALESCE(CONCAT(e.nombres, ' ', e.apellidos), CONCAT(p.nombres, ' ', p.apellidos), u.username) AS nombre_real
+    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, 
+           u.id_estudiante, u.id_profesor,
+           -- Agregamos la búsqueda del nombre real:
+           CASE 
+               WHEN u.id_estudiante IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM estudiantes WHERE id_estudiante = u.id_estudiante)
+               WHEN u.id_profesor IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM profesores WHERE id_profesor = u.id_profesor)
+               ELSE 'Administrador del Sistema'
+           END AS nombre_real
     FROM usuarios u
     INNER JOIN roles r ON u.id_rol = r.id_rol
-    LEFT JOIN estudiantes e ON e.id_estudiante = u.id_estudiante
-    LEFT JOIN profesores p ON p.id_profesor = u.id_profesor
-    WHERE u.username = p_username
+    WHERE u.username = p_username 
       AND u.estado = 1;
 END //
 
--- GESTION DE USUARIOS (las claves llegan ya cifradas con BCrypt desde la aplicacion)
+
+-- CRUD Usuarios
+-- LISTAR USUARIOS 
+
+DROP PROCEDURE IF EXISTS sp_ListarUsuarios //
+
 CREATE PROCEDURE sp_ListarUsuarios()
 BEGIN
-    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, u.id_estudiante, u.id_profesor, u.estado,
-           COALESCE(CONCAT(e.nombres, ' ', e.apellidos), CONCAT(p.nombres, ' ', p.apellidos), u.username) AS nombre_real
+    SELECT u.id_usuario, u.username, u.password, u.id_rol, r.nombre AS rol, 
+           u.id_estudiante, u.id_profesor, u.estado,
+           -- Agregamos la búsqueda del nombre real igual que en el login:
+           CASE 
+               WHEN u.id_estudiante IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM estudiantes WHERE id_estudiante = u.id_estudiante)
+               WHEN u.id_profesor IS NOT NULL THEN (SELECT CONCAT(nombres, ' ', apellidos) FROM profesores WHERE id_profesor = u.id_profesor)
+               ELSE 'Administrador del Sistema'
+           END AS nombre_real
     FROM usuarios u
-    INNER JOIN roles r ON u.id_rol = r.id_rol
-    LEFT JOIN estudiantes e ON e.id_estudiante = u.id_estudiante
-    LEFT JOIN profesores p ON p.id_profesor = u.id_profesor
-    ORDER BY u.username;
+    INNER JOIN roles r ON u.id_rol = r.id_rol;
 END //
 
+CALL sp_ListarUsuarios();
+CALL sp_ListarEstudiantes();
+CALL sp_ListarProfesores();
+-- INSERTAR USUARIO 
 CREATE PROCEDURE sp_InsertarUsuario(
     IN p_username VARCHAR(50),
     IN p_password VARCHAR(255),
@@ -287,6 +365,7 @@ BEGIN
     VALUES (p_username, p_password, p_id_rol, p_id_estudiante, p_id_profesor, 1);
 END //
 
+--  ACTUALIZAR USUARIO  
 CREATE PROCEDURE sp_ActualizarUsuario(
     IN p_id_usuario INT,
     IN p_username VARCHAR(50),
@@ -294,7 +373,7 @@ CREATE PROCEDURE sp_ActualizarUsuario(
     IN p_id_rol INT,
     IN p_id_estudiante INT,
     IN p_id_profesor INT,
-    IN p_estado BOOLEAN
+    IN p_estado TINYINT
 )
 BEGIN
     UPDATE usuarios
@@ -307,13 +386,19 @@ BEGIN
     WHERE id_usuario = p_id_usuario;
 END //
 
+-- CAMBIAR ESTADO 
 CREATE PROCEDURE sp_CambiarEstadoUsuario(
     IN p_id_usuario INT,
-    IN p_estado BOOLEAN
+    IN p_estado TINYINT
 )
 BEGIN
-    UPDATE usuarios SET estado = p_estado WHERE id_usuario = p_id_usuario;
+    UPDATE usuarios
+    SET estado = p_estado
+    WHERE id_usuario = p_id_usuario;
 END //
+
+-- ELIMINAR USUARIO 
+DROP PROCEDURE IF EXISTS sp_EliminarUsuario //
 
 CREATE PROCEDURE sp_EliminarUsuario(
     IN p_id_usuario INT
@@ -321,8 +406,6 @@ CREATE PROCEDURE sp_EliminarUsuario(
 BEGIN
     DELETE FROM usuarios WHERE id_usuario = p_id_usuario;
 END //
- 
- 
 -- CRUD ESTUDIANTES
 CREATE PROCEDURE sp_ListarEstudiantes()
 BEGIN

@@ -1,10 +1,10 @@
 package vista;
 
 import gestor.GestorDatos;
-import modelo.Usuario;
-import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
+import javax.swing.*;
+import modelo.Usuario;
 
 public class MenuPrincipal extends JFrame {
 
@@ -21,15 +21,13 @@ public class MenuPrincipal extends JFrame {
     private JPanel panelMenu;
     private PanelReportes panelReportesInstance;
     private PanelEstudiantes panelEstudiantesInstance;
+    private PanelProfesores panelProfesoresInstance; // Panel de profesores
     private PanelConvalidacion panelConvalidacionInstance;
     private PanelMatricula panelMatriculaInstance;
     private PanelUsuarios panelUsuariosInstance;
     private PanelPortalEstudiante panelPortalEstudianteInstance;
     private PanelCursos panelCursosInstance;
-    
-
     private Usuario usuarioLogueado;
-
 
     public MenuPrincipal(Usuario usuario) {
         this.usuarioLogueado = usuario;
@@ -66,22 +64,27 @@ public class MenuPrincipal extends JFrame {
         panelMenu.add(crearSeparador());
         panelMenu.add(Box.createRigidArea(new Dimension(0, 15)));
 
+        // Botones generales del menú
         JButton btnUsuarios = crearBotonMenu("Gestion de Usuarios");
         JButton btnEstudiantes = crearBotonMenu("Gestion de Estudiantes");
+        JButton btnProfesores = crearBotonMenu("Gestion de Profesores");
         JButton btnCursos = crearBotonMenu("Gestion de Cursos");
         JButton btnMatricula = crearBotonMenu("Gestion de Matricula");
         JButton btnConvalidacion = crearBotonMenu("Convalidacion");
         JButton btnReportes = crearBotonMenu("Reportes");
         
+        // Botones exclusivos de estudiante
         JButton btnMisCursosEstudiante = crearBotonMenu("Mis Cursos / Horario");
         JButton btnMatriculaLineaEstudiante = crearBotonMenu("Matrícula en Línea");
 
         int idRol = usuarioLogueado.getIdRol();
 
-        if (idRol == 1) { // Admin: Ve todo
+        if (idRol == 1) { // Admin: Ve todos los módulos
             panelMenu.add(btnUsuarios); 
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
             panelMenu.add(btnEstudiantes);
+            panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
+            panelMenu.add(btnProfesores); // Agregado al menú del Admin
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
             panelMenu.add(btnCursos);
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
@@ -90,13 +93,13 @@ public class MenuPrincipal extends JFrame {
             panelMenu.add(btnConvalidacion);
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
             panelMenu.add(btnReportes);
-        } else if (idRol == 2) { // Profesor: Cursos, Matricula, Convalidacion
+        } else if (idRol == 2) { // Profesor: Cursos, Matrícula, Convalidación
             panelMenu.add(btnCursos);
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
             panelMenu.add(btnMatricula);
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
             panelMenu.add(btnConvalidacion);
-        } else if (idRol == 3) { // Estudiante: Solo ve su portal (sin convalidación)
+        } else if (idRol == 3) { // Estudiante: Portal Estudiantil
             panelMenu.add(btnMisCursosEstudiante);
             panelMenu.add(Box.createRigidArea(new Dimension(0, 8)));
             panelMenu.add(btnMatriculaLineaEstudiante);
@@ -116,21 +119,24 @@ public class MenuPrincipal extends JFrame {
         panelContenido.setBackground(COLOR_FONDO);
         panelContenido.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        // Instancias de todos los paneles
+        // Inicialización de instancias de paneles
         panelReportesInstance = new PanelReportes();
         panelEstudiantesInstance = new PanelEstudiantes();
+        panelProfesoresInstance = new PanelProfesores(); 
         panelConvalidacionInstance = new PanelConvalidacion();
         panelMatriculaInstance = new PanelMatricula();
         panelUsuariosInstance = new PanelUsuarios();
         panelPortalEstudianteInstance = new PanelPortalEstudiante(usuarioLogueado);
         panelCursosInstance = new PanelCursos();
 
-        // Agregamos los paneles al CardLayout
+        // Registro en CardLayout
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
         panelContenido.add(panelUsuariosInstance, "Usuarios"); 
         panelContenido.add(panelPortalEstudianteInstance, "PortalEstudiante");
         panelContenido.add(panelEstudiantesInstance, "Estudiantes");
         panelContenido.add(panelCursosInstance, "Cursos");
+        panelContenido.add(panelProfesoresInstance, "Profesores");
+        panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
         panelContenido.add(panelMatriculaInstance, "Matricula");
         panelContenido.add(panelConvalidacionInstance, "Convalidacion");
         panelContenido.add(panelReportesInstance, "Reportes");
@@ -140,11 +146,15 @@ public class MenuPrincipal extends JFrame {
 
         panelPrincipal.add(crearFooter(), BorderLayout.SOUTH);
 
-        // --- EVENTOS GENERALES (Admin y Profesor) ---
+        // --- BOTONES ---
         btnUsuarios.addActionListener(e -> {
             panelUsuariosInstance.cargarDatosTabla(); 
             mostrarPanel("Usuarios");
         }); 
+        btnProfesores.addActionListener(e -> {
+            panelProfesoresInstance.cargarDatosTabla(); 
+            mostrarPanel("Profesores");
+        });
         btnEstudiantes.addActionListener(e -> {
             panelEstudiantesInstance.cargarDatosTabla(); 
             mostrarPanel("Estudiantes");
@@ -164,7 +174,7 @@ public class MenuPrincipal extends JFrame {
         btnReportes.addActionListener(e -> abrirPanelConDatos(
                 panelReportesInstance::cargarDatosIniciales, "Reportes", "reportes"));
 
-        // --- EVENTOS EXCLUSIVOS DEL ESTUDIANTE ---
+        // --- BOTON EXCLUSIVOS DEL ESTUDIANTE ---
         btnMisCursosEstudiante.addActionListener(e -> {
             panelPortalEstudianteInstance.cargarDatosIniciales();
             panelPortalEstudianteInstance.mostrarVista("Cursos"); 
@@ -286,7 +296,7 @@ public class MenuPrincipal extends JFrame {
             gbc.gridy = 0;
             panel.add(lblBanner, gbc);
         } else {
-            System.err.println("⚠️ ERROR: No se encontró la imagen en /imagenes/banner_matricula.jpeg");
+            System.err.println("⚠️ ERROR: No se encontró la imagen en /imagenes/banner_matricula.jpg");
         }
 
         JLabel lblTitulo = new JLabel("SISTEMA DE MATRICULA");
