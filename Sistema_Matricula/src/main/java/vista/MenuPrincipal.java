@@ -158,6 +158,7 @@ public class MenuPrincipal extends JFrame {
                 panelMatriculaInstance::cargarDatos, "Matricula", "matrícula"));
                 
         btnConvalidacion.addActionListener(e -> {
+            panelConvalidacionInstance.cargarCursosCombo();
             mostrarPanel("Convalidacion");
         });
         btnReportes.addActionListener(e -> abrirPanelConDatos(
