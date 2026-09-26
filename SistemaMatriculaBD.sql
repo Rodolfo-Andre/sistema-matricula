@@ -242,13 +242,6 @@ INSERT INTO detalle_matricula (id_matricula, id_curso_profesor) VALUES
 (9, 9);
  
 
--- Insertar 
-INSERT INTO usuarios (username, password, id_rol, id_estudiante, id_profesor) VALUES 
-('admin', '$2a$12$HfXezO9Q1POJb8Ag3S0eaeqlqScVq97oPLexGTNx0e0xuYZjq6BjW', 1, NULL, NULL),
-('E001', '$2a$12$bEkqErdmLWszYbg9voFWf.Pb0U2RT3vzdoKNx6dQ0DyTPCcj2AHjO', 3, 1, NULL),
-('E002', '$2a$12$bEkqErdmLWszYbg9voFWf.Pb0U2RT3vzdoKNx6dQ0DyTPCcj2AHjO', 3, 2, NULL),
-('prof_carlos', '$2a$12$OhjzeGeEsC7QQjAZfDA.geoAihcTQD37pKXfe/L3cilhYO0L/.NN6', 2, NULL, 1);
- select *from  usuarios;
 -- =========================================================
 -- PROCEDIMIENTOS ALMACENADOS 
 -- =========================================================
@@ -263,8 +256,6 @@ BEGIN
     FROM profesores
     ORDER BY id_profesor DESC;
 END //
-
-DELIMITER ;
 
 -- INSERTAR PROFESOR
 DROP PROCEDURE IF EXISTS sp_InsertarProfesor //
@@ -349,9 +340,7 @@ BEGIN
     INNER JOIN roles r ON u.id_rol = r.id_rol;
 END //
 
-CALL sp_ListarUsuarios();
-CALL sp_ListarEstudiantes();
-CALL sp_ListarProfesores();
+
 -- INSERTAR USUARIO 
 CREATE PROCEDURE sp_InsertarUsuario(
     IN p_username VARCHAR(50),
