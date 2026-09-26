@@ -348,6 +348,9 @@ BEGIN
     INNER JOIN roles r ON u.id_rol = r.id_rol;
 END //
 
+CALL sp_ListarUsuarios();
+CALL sp_ListarEstudiantes();
+CALL sp_ListarProfesores();
 -- INSERTAR USUARIO 
 CREATE PROCEDURE sp_InsertarUsuario(
     IN p_username VARCHAR(50),
