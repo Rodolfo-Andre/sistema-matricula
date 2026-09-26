@@ -23,20 +23,37 @@ public class CursoController {
     }
 
     /**
-     * Registra un nuevo curso. Devuelve false si ya existe un curso
-     * con ese código (regla de negocio: el código debe ser único).
+     * Registra un nuevo curso incluyendo su estado.
+     * Devuelve false si ya existe un curso con ese código.
      */
-    public boolean guardarCurso(String codigo, String nombre, int creditos) {
+    public boolean guardarCurso(String codigo, String nombre, int creditos, boolean estado) {
         if (cursoDAO.buscarPorCodigo(codigo) != null) {
             return false;
         }
-        Curso nuevo = new Curso(codigo, nombre, creditos); // valida internamente
+        Curso nuevo = new Curso(codigo, nombre, creditos, estado);
         return cursoDAO.insertar(nuevo);
     }
 
-    public boolean actualizarCurso(int idCurso, String codigo, String nombre, int creditos) {
-        Curso curso = new Curso(idCurso, codigo, nombre, creditos); // valida internamente
+    /**
+     * Sobrecarga para mantener compatibilidad si no se pasa estado (por defecto activo).
+     */
+    public boolean guardarCurso(String codigo, String nombre, int creditos) {
+        return guardarCurso(codigo, nombre, creditos, true);
+    }
+
+    /**
+     * Actualiza los datos de un curso existente incluyendo su estado.
+     */
+    public boolean actualizarCurso(int idCurso, String codigo, String nombre, int creditos, boolean estado) {
+        Curso curso = new Curso(idCurso, codigo, nombre, creditos, estado);
         return cursoDAO.actualizar(curso);
+    }
+
+    /**
+     * Sobrecarga para mantener compatibilidad si se actualiza sin pasar estado explícito.
+     */
+    public boolean actualizarCurso(int idCurso, String codigo, String nombre, int creditos) {
+        return actualizarCurso(idCurso, codigo, nombre, creditos, true);
     }
 
     public boolean eliminarCurso(int idCurso) {

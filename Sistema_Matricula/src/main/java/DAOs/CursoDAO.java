@@ -21,7 +21,8 @@ public class CursoDAO {
                     rs.getInt("id_curso"),
                     rs.getString("codigo"),
                     rs.getString("nombre"),
-                    rs.getInt("creditos")
+                    rs.getInt("creditos"),
+                    rs.getBoolean("estado")
                 ));
             }
         } catch (SQLException e) {
@@ -31,7 +32,7 @@ public class CursoDAO {
     }
 
     public boolean insertar(Curso curso) {
-        String sql = "{CALL sp_InsertarCurso(?, ?, ?)}";
+        String sql = "{CALL sp_InsertarCurso(?, ?, ?, ?)}";
 
         try (Connection conn = ConexionBD.conectar();
              CallableStatement cstmt = conn.prepareCall(sql)) {
@@ -39,6 +40,7 @@ public class CursoDAO {
             cstmt.setString(1, curso.getCodigo());
             cstmt.setString(2, curso.getNombre());
             cstmt.setInt(3, curso.getCreditos());
+            cstmt.setBoolean(4, curso.isEstado());
 
             return cstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -48,7 +50,7 @@ public class CursoDAO {
     }
 
     public boolean actualizar(Curso curso) {
-        String sql = "{CALL sp_ActualizarCurso(?, ?, ?, ?)}";
+        String sql = "{CALL sp_ActualizarCurso(?, ?, ?, ?, ?)}";
 
         try (Connection conn = ConexionBD.conectar();
              CallableStatement cstmt = conn.prepareCall(sql)) {
@@ -57,6 +59,7 @@ public class CursoDAO {
             cstmt.setString(2, curso.getCodigo());
             cstmt.setString(3, curso.getNombre());
             cstmt.setInt(4, curso.getCreditos());
+            cstmt.setBoolean(5, curso.isEstado());
 
             return cstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -93,7 +96,8 @@ public class CursoDAO {
                         rs.getInt("id_curso"),
                         rs.getString("codigo"),
                         rs.getString("nombre"),
-                        rs.getInt("creditos")
+                        rs.getInt("creditos"),
+                        rs.getBoolean("estado")
                     );
                 }
             }

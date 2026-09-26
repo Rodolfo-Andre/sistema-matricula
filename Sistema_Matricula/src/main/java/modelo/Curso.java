@@ -1,6 +1,3 @@
-/*/
-CAPTURA
-/*/
 package modelo;
 
 public class Curso {
@@ -8,18 +5,26 @@ public class Curso {
     private String codigo;
     private String nombre;
     private int creditos;
+    private boolean estado;
 
-    public Curso() {}
+    public Curso() {
+        this.estado = true;
+    }
 
-    public Curso(int idCurso, String codigo, String nombre, int creditos) {
+    public Curso(int idCurso, String codigo, String nombre, int creditos, boolean estado) {
         this.idCurso = idCurso;
         setCodigo(codigo);
         setNombre(nombre);
         setCreditos(creditos);
+        this.estado = estado;
+    }
+
+    public Curso(String codigo, String nombre, int creditos, boolean estado) {
+        this(0, codigo, nombre, creditos, estado);
     }
 
     public Curso(String codigo, String nombre, int creditos) {
-        this(0, codigo, nombre, creditos);
+        this(0, codigo, nombre, creditos, true);
     }
 
     public Curso(String codigo, String nombre) {
@@ -57,8 +62,12 @@ public class Curso {
         this.creditos = creditos;
     }
 
+    public boolean isEstado() { return estado; }
+    public void setEstado(boolean estado) { this.estado = estado; }
+
     public void mostrarDatos() {
-        System.out.printf("Codigo: %-8s Nombre: %-25s Creditos: %d%n", codigo, nombre, creditos);
+        System.out.printf("Codigo: %-8s Nombre: %-25s Creditos: %d Estado: %s%n",
+                codigo, nombre, creditos, (estado ? "Disponible" : "Inhabilitado"));
     }
 
     public void mostrarDatos(boolean resumido) {
@@ -80,6 +89,7 @@ public class Curso {
 
     @Override
     public String toString() {
-        return String.format("ID: %d | Código: %s | Curso: %s | Créditos: %d", idCurso, codigo, nombre, creditos);
+        return String.format("ID: %d | Código: %s | Curso: %s | Créditos: %d | Estado: %s",
+                idCurso, codigo, nombre, creditos, (estado ? "Disponible" : "Inhabilitado"));
     }
 }

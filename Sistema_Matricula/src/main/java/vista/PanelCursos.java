@@ -20,6 +20,7 @@ public class PanelCursos extends JPanel {
     private JTable tabla;
     private DefaultTableModel modeloTabla;
     private JTextField txtCodigo, txtNombre, txtCreditos;
+    private JComboBox<String> cmbEstado;
     private JButton btnGuardar, btnEditar, btnEliminar, btnLimpiar;
 
     private JTextField txtBuscarCodigo;
@@ -73,15 +74,18 @@ public class PanelCursos extends JPanel {
         txtCodigo = new JTextField(15);
         txtNombre = new JTextField(15);
         txtCreditos = new JTextField(15);
+        cmbEstado = new JComboBox<>(new String[]{"Disponible", "Inhabilitado"});
 
         aplicarEstiloCampo(txtCodigo);
         aplicarEstiloCampo(txtNombre);
         aplicarEstiloCampo(txtCreditos);
+        aplicarEstiloCampo(cmbEstado);
 
         int row = 0;
         agregarCampo(panel, gbc, "Código:", txtCodigo, row++);
         agregarCampo(panel, gbc, "Nombre:", txtNombre, row++);
         agregarCampo(panel, gbc, "Créditos:", txtCreditos, row++);
+        agregarCampo(panel, gbc, "Estado:", cmbEstado, row++);
 
         JPanel panelBotones = new JPanel(new GridLayout(2, 2, 8, 8));
         panelBotones.setBackground(Color.WHITE);
@@ -141,7 +145,7 @@ public class PanelCursos extends JPanel {
 
         panel.add(crearPanelBusqueda(), BorderLayout.NORTH);
 
-        String[] columnas = {"Código", "Nombre", "Créditos"};
+        String[] columnas = {"Código", "Nombre", "Créditos", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -203,11 +207,6 @@ public class PanelCursos extends JPanel {
         return panel;
     }
 
-    /**
-     * MANEJO DE ARCHIVOS (exportar): toma los cursos que tiene la base
-     * de datos en este momento y los guarda en un archivo .txt elegido
-     * por el usuario, usando ArchivoCursoUtil.
-     */
     private void exportarCursosAArchivo() {
         List<Curso> cursos = controller.listarCursos();
         if (cursos == null || cursos.isEmpty()) {
@@ -222,7 +221,7 @@ public class PanelCursos extends JPanel {
 
         int opcion = selector.showSaveDialog(this);
         if (opcion != JFileChooser.APPROVE_OPTION) {
-            return; // el usuario canceló
+            return;
         }
 
         File archivo = selector.getSelectedFile();
@@ -241,11 +240,6 @@ public class PanelCursos extends JPanel {
         }
     }
 
-    /**
-     * MANEJO DE ARCHIVOS (importar): lee un archivo .txt previamente
-     * exportado y registra en la base de datos los cursos que aún no
-     * existan (evita duplicar por código).
-     */
     private void importarCursosDesdeArchivo() {
         JFileChooser selector = new JFileChooser();
         selector.setDialogTitle("Seleccionar archivo de cursos");
@@ -253,7 +247,7 @@ public class PanelCursos extends JPanel {
 
         int opcion = selector.showOpenDialog(this);
         if (opcion != JFileChooser.APPROVE_OPTION) {
-            return; // el usuario canceló
+            return;
         }
 
         File archivo = selector.getSelectedFile();
@@ -268,9 +262,9 @@ public class PanelCursos extends JPanel {
             for (Curso curso : cursosLeidos) {
                 if (controller.buscarPorCodigo(curso.getCodigo()) != null) {
                     duplicados++;
-                    continue; // ya existe ese código, no se vuelve a insertar
+                    continue;
                 }
-                if (controller.guardarCurso(curso.getCodigo(), curso.getNombre(), curso.getCreditos())) {
+                if (controller.guardarCurso(curso.getCodigo(), curso.getNombre(), curso.getCreditos(), curso.isEstado())) {
                     importados++;
                 }
             }
@@ -279,8 +273,8 @@ public class PanelCursos extends JPanel {
 
             StringBuilder resumen = new StringBuilder();
             resumen.append("Importación finalizada.\n")
-                   .append("Cursos importados: ").append(importados).append("\n")
-                   .append("Cursos ya existentes (omitidos): ").append(duplicados);
+                    .append("Cursos importados: ").append(importados).append("\n")
+                    .append("Cursos ya existentes (omitidos): ").append(duplicados);
 
             if (!errores.isEmpty()) {
                 resumen.append("\n\nLíneas con errores (").append(errores.size()).append("):\n");
@@ -325,7 +319,12 @@ public class PanelCursos extends JPanel {
         this.listaActualCursos = cursos != null ? cursos : new ArrayList<>();
         modeloTabla.setRowCount(0);
         for (Curso c : this.listaActualCursos) {
-            modeloTabla.addRow(new Object[]{c.getCodigo(), c.getNombre(), c.getCreditos()});
+            modeloTabla.addRow(new Object[]{
+                c.getCodigo(),
+                c.getNombre(),
+                c.getCreditos(),
+                c.isEstado() ? "Disponible" : "Inhabilitado"
+            });
         }
     }
 
@@ -335,6 +334,7 @@ public class PanelCursos extends JPanel {
         String cod = txtCodigo.getText().trim();
         String nom = txtNombre.getText().trim();
         int creditos = Integer.parseInt(txtCreditos.getText().trim());
+        boolean estado = cmbEstado.getSelectedIndex() == 0;
 
         if (controller.buscarPorCodigo(cod) != null) {
             JOptionPane.showMessageDialog(this, "Ya existe un curso con ese código.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -342,7 +342,7 @@ public class PanelCursos extends JPanel {
         }
 
         try {
-            boolean exito = controller.guardarCurso(cod, nom, creditos);
+            boolean exito = controller.guardarCurso(cod, nom, creditos, estado);
 
             if (exito) {
                 cargarDatosTabla();
@@ -366,10 +366,10 @@ public class PanelCursos extends JPanel {
         String cod = txtCodigo.getText().trim();
         String nom = txtNombre.getText().trim();
         int creditos = Integer.parseInt(txtCreditos.getText().trim());
+        boolean estado = cmbEstado.getSelectedIndex() == 0;
 
         try {
-            Curso curso = new Curso(idCursoSeleccionado, cod, nom, creditos);
-            boolean exito = controller.actualizarCurso(idCursoSeleccionado, cod, nom, creditos);
+            boolean exito = controller.actualizarCurso(idCursoSeleccionado, cod, nom, creditos, estado);
 
             if (exito) {
                 cargarDatosTabla();
@@ -415,6 +415,7 @@ public class PanelCursos extends JPanel {
             txtCodigo.setEditable(false);
             txtNombre.setText(seleccionado.getNombre());
             txtCreditos.setText(String.valueOf(seleccionado.getCreditos()));
+            cmbEstado.setSelectedIndex(seleccionado.isEstado() ? 0 : 1);
         }
     }
 
@@ -424,6 +425,7 @@ public class PanelCursos extends JPanel {
         txtCodigo.setEditable(true);
         txtNombre.setText("");
         txtCreditos.setText("");
+        cmbEstado.setSelectedIndex(0);
         tabla.clearSelection();
     }
 

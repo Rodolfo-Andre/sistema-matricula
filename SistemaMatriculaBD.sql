@@ -5,6 +5,9 @@ CREATE DATABASE sistema_matricula
     COLLATE utf8mb4_spanish_ci;
  
 USE sistema_matricula;
+
+select * from usuarios; 
+select * from cursos; 
  
 CREATE TABLE roles (
     id_rol INT AUTO_INCREMENT PRIMARY KEY,
@@ -60,7 +63,8 @@ CREATE TABLE cursos (
     id_curso INT AUTO_INCREMENT PRIMARY KEY,
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(100) NOT NULL,
-    creditos INT NOT NULL
+    creditos INT NOT NULL,
+    estado TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
  
 CREATE TABLE horarios (
@@ -189,6 +193,14 @@ INSERT INTO cursos (codigo, nombre, creditos) VALUES
 ('CUR109', 'Fundamentos de Ciberseguridad', 3),
 ('CUR110', 'Arquitectura de Software', 4);
  
+ -- Asignar los cursos existentes a los profesores
+ INSERT IGNORE INTO curso_profesor (id_curso_profesor, id_curso, id_profesor, id_horario, periodo) VALUES
+(1, 1, 1, 1, '2026-1'),
+(2, 2, 2, 2, '2026-1'),
+(3, 3, 3, 3, '2026-1'),
+(4, 4, 4, 4, '2026-1'),
+(5, 5, 5, 5, '2026-1');
+
 -- Horarios
 INSERT INTO horarios (dia, hora_inicio, hora_fin, aula) VALUES 
 ('Lunes', '08:00:00', '10:00:00', 'Lab-101'),
@@ -483,35 +495,87 @@ BEGIN
     SELECT id_carrera, nombre FROM carreras ORDER BY nombre;
 END //
  
+DELIMITER //
+
+-- 2. Procedure Listar Cursos con Estado
+DROP PROCEDURE IF EXISTS sp_ListarCursos //
 CREATE PROCEDURE sp_ListarCursos()
 BEGIN
-    SELECT id_curso, codigo, nombre, creditos FROM cursos ORDER BY nombre;
+    SELECT id_curso, codigo, nombre, creditos, estado 
+    FROM cursos 
+    ORDER BY nombre;
 END //
- 
+
+-- 3. Procedure Insertar Curso con Estado
+DROP PROCEDURE IF EXISTS sp_InsertarCurso //
 CREATE PROCEDURE sp_InsertarCurso(
     IN p_codigo VARCHAR(20),
     IN p_nombre VARCHAR(100),
-    IN p_creditos INT
+    IN p_creditos INT,
+    IN p_estado TINYINT(1)
 )
 BEGIN
-    INSERT INTO cursos (codigo, nombre, creditos)
-    VALUES (p_codigo, p_nombre, p_creditos);
+    INSERT INTO cursos (codigo, nombre, creditos, estado)
+    VALUES (p_codigo, p_nombre, p_creditos, p_estado);
 END //
- 
+
+-- 4. Procedure Actualizar Curso con Estado
+DROP PROCEDURE IF EXISTS sp_ActualizarCurso //
 CREATE PROCEDURE sp_ActualizarCurso(
     IN p_id_curso INT,
     IN p_codigo VARCHAR(20),
     IN p_nombre VARCHAR(100),
-    IN p_creditos INT
+    IN p_creditos INT,
+    IN p_estado TINYINT(1)
 )
 BEGIN
     UPDATE cursos
     SET codigo = p_codigo,
         nombre = p_nombre,
-        creditos = p_creditos
+        creditos = p_creditos,
+        estado = p_estado
     WHERE id_curso = p_id_curso;
 END //
- 
+
+-- 5. Procedure Buscar Curso por Código
+DROP PROCEDURE IF EXISTS sp_BuscarCursoPorCodigo //
+CREATE PROCEDURE sp_BuscarCursoPorCodigo(
+    IN p_codigo VARCHAR(20)
+)
+BEGIN
+    SELECT id_curso, codigo, nombre, creditos, estado 
+    FROM cursos 
+    WHERE codigo = p_codigo;
+END //
+
+-- 6. Actualizar Procedure para Listar Cursos Disponibles en Matrícula
+-- (Solo cursos activos con horario y profesor asignado)
+DROP PROCEDURE IF EXISTS sp_ListarSeccionesDisponibles //
+CREATE PROCEDURE sp_ListarSeccionesDisponibles(
+    IN p_periodo VARCHAR(10)
+)
+BEGIN
+    SELECT cp.id_curso_profesor, 
+           c.codigo AS codigo_curso, 
+           c.nombre AS curso, 
+           c.creditos,
+           CONCAT(p.nombres, ' ', p.apellidos) AS docente,
+           h.dia, 
+           h.hora_inicio, 
+           h.hora_fin, 
+           h.aula,
+           cp.periodo
+    FROM curso_profesor cp
+    INNER JOIN cursos c ON cp.id_curso = c.id_curso
+    INNER JOIN profesores p ON cp.id_profesor = p.id_profesor
+    INNER JOIN horarios h ON cp.id_horario = h.id_horario
+    WHERE cp.periodo = p_periodo
+      AND c.estado = 1
+    ORDER BY c.nombre;
+END //
+
+DELIMITER ;
+
 CREATE PROCEDURE sp_EliminarCurso(
     IN p_id_curso INT
 )
@@ -525,6 +589,110 @@ CREATE PROCEDURE sp_BuscarCursoPorCodigo(
 BEGIN
     SELECT id_curso, codigo, nombre, creditos FROM cursos WHERE codigo = p_codigo;
 END //
+
+-- =================Matriculas ============
+
+DROP PROCEDURE IF EXISTS sp_ObtenerHorarioEstudiante //
+
+CREATE PROCEDURE sp_ObtenerHorarioEstudiante(
+    IN p_id_estudiante INT,
+    IN p_periodo VARCHAR(10)
+)
+BEGIN
+    SELECT c.codigo AS codigo_curso,
+           c.nombre AS curso,
+           c.creditos,
+           CONCAT(p.nombres, ' ', p.apellidos) AS docente,
+           h.dia,
+           h.hora_inicio,
+           h.hora_fin,
+           h.aula
+    FROM matriculas m
+    INNER JOIN detalle_matricula dm ON m.id_matricula = dm.id_matricula
+    INNER JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor
+    INNER JOIN cursos c ON cp.id_curso = c.id_curso
+    INNER JOIN profesores p ON cp.id_profesor = p.id_profesor
+    INNER JOIN horarios h ON cp.id_horario = h.id_horario
+    WHERE m.id_estudiante = p_id_estudiante
+      AND m.periodo = p_periodo
+      AND m.estado = 'ACTIVA'
+      AND dm.estado = 'ACTIVO'
+    ORDER BY FIELD(h.dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'), h.hora_inicio;
+END //
+
+-- Procedimiento para que el estudiante se auto-matricule desde su portal
+DROP PROCEDURE IF EXISTS sp_AutoMatricularEstudiante //
+
+CREATE PROCEDURE sp_AutoMatricularEstudiante(
+    IN p_id_estudiante INT,
+    IN p_id_curso_profesor INT,
+    IN p_periodo VARCHAR(10)
+)
+BEGIN
+    DECLARE v_id_matricula INT;
+    DECLARE v_id_horario INT;
+    DECLARE v_dia VARCHAR(20);
+    DECLARE v_inicio TIME;
+    DECLARE v_fin TIME;
+
+    -- 1. Obtener o crear cabecera de matricula en la tabla 'matriculas'
+    SELECT id_matricula INTO v_id_matricula
+    FROM matriculas
+    WHERE id_estudiante = p_id_estudiante AND periodo = p_periodo AND estado = 'ACTIVA'
+    LIMIT 1;
+
+    IF v_id_matricula IS NULL THEN
+        INSERT INTO matriculas (id_estudiante, fecha_matricula, periodo, estado)
+        VALUES (p_id_estudiante, CURDATE(), p_periodo, 'ACTIVA');
+        SET v_id_matricula = LAST_INSERT_ID();
+    END IF;
+
+    -- 2. Verificar si ya está matriculado en la misma sección o curso
+    IF EXISTS (
+        SELECT 1 
+        FROM detalle_matricula dm
+        INNER JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor
+        WHERE dm.id_matricula = v_id_matricula 
+          AND dm.estado = 'ACTIVO'
+          AND cp.id_curso = (SELECT id_curso FROM curso_profesor WHERE id_curso_profesor = p_id_curso_profesor)
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ya te encuentras matriculado en este curso.';
+    END IF;
+
+    -- 3. Obtener horario del curso que quiere matricular
+    SELECT cp.id_horario, h.dia, h.hora_inicio, h.hora_fin 
+    INTO v_id_horario, v_dia, v_inicio, v_fin
+    FROM curso_profesor cp
+    INNER JOIN horarios h ON cp.id_horario = h.id_horario
+    WHERE cp.id_curso_profesor = p_id_curso_profesor;
+
+    -- 4. Validar cruce de horario (traslape)
+    IF EXISTS (
+        SELECT 1
+        FROM detalle_matricula dm
+        INNER JOIN curso_profesor cp ON dm.id_curso_profesor = cp.id_curso_profesor
+        INNER JOIN horarios h ON cp.id_horario = h.id_horario
+        WHERE dm.id_matricula = v_id_matricula
+          AND dm.estado = 'ACTIVO'
+          AND h.dia = v_dia
+          AND h.hora_inicio < v_fin 
+          AND h.hora_fin > v_inicio
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cruce de horario detectado con otro de tus cursos.';
+    END IF;
+
+    -- 5. Insertar o reactivar detalle
+    IF EXISTS (SELECT 1 FROM detalle_matricula WHERE id_matricula = v_id_matricula AND id_curso_profesor = p_id_curso_profesor) THEN
+        UPDATE detalle_matricula 
+        SET estado = 'ACTIVO' 
+        WHERE id_matricula = v_id_matricula AND id_curso_profesor = p_id_curso_profesor;
+    ELSE
+        INSERT INTO detalle_matricula (id_matricula, id_curso_profesor, estado)
+        VALUES (v_id_matricula, p_id_curso_profesor, 'ACTIVO');
+    END IF;
+END //
+
+
  
 -- REPORTES
 CREATE PROCEDURE sp_ReporteMatriculasPorEstudiante(
