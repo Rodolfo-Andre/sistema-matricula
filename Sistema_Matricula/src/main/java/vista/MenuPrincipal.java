@@ -25,6 +25,7 @@ public class MenuPrincipal extends JFrame {
     private PanelMatricula panelMatriculaInstance;
     private PanelUsuarios panelUsuariosInstance;
     private PanelPortalEstudiante panelPortalEstudianteInstance;
+    private PanelCursos panelCursosInstance;
     
 
     private Usuario usuarioLogueado;
@@ -122,13 +123,14 @@ public class MenuPrincipal extends JFrame {
         panelMatriculaInstance = new PanelMatricula();
         panelUsuariosInstance = new PanelUsuarios();
         panelPortalEstudianteInstance = new PanelPortalEstudiante(usuarioLogueado);
+        panelCursosInstance = new PanelCursos();
 
         // Agregamos los paneles al CardLayout
         panelContenido.add(crearPanelBienvenida(), "Bienvenida");
         panelContenido.add(panelUsuariosInstance, "Usuarios"); 
         panelContenido.add(panelPortalEstudianteInstance, "PortalEstudiante");
         panelContenido.add(panelEstudiantesInstance, "Estudiantes");
-        panelContenido.add(crearPanelInfo("Gestion de Cursos", "Orlando Leon"), "Cursos");
+        panelContenido.add(panelCursosInstance, "Cursos");
         panelContenido.add(panelMatriculaInstance, "Matricula");
         panelContenido.add(panelConvalidacionInstance, "Convalidacion");
         panelContenido.add(panelReportesInstance, "Reportes");
@@ -147,7 +149,10 @@ public class MenuPrincipal extends JFrame {
             panelEstudiantesInstance.cargarDatosTabla(); 
             mostrarPanel("Estudiantes");
         });
-        btnCursos.addActionListener(e -> mostrarPanel("Cursos"));
+        btnCursos.addActionListener(e -> {
+            panelCursosInstance.cargarDatosTabla();
+            mostrarPanel("Cursos");
+        });
 
         btnMatricula.addActionListener(e -> abrirPanelConDatos(
                 panelMatriculaInstance::cargarDatos, "Matricula", "matrícula"));
